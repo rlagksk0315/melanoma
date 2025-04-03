@@ -34,7 +34,7 @@ Our approach aims to **balance skin tone representation** in melanoma datasets a
 - **VGG-19-based style transfer** with input (content) and reference (style) images
 ![Model Architecture](figs/model.png)
 - **Google Monk Skin Tone Scale** is used to quantitatively evaluate skin tone
-![Google Monk Skin Tone Scale](figs/Complete\ MST\ Scale.png)
+![Google Monk Skin Tone Scale](figs/Complete MST Scale.png)
 - **Otsu thresholding** removes lesions before skin tone classification
 
 ### 🧠 Classification Model
