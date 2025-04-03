@@ -18,6 +18,7 @@ Traditional diagnostic methods like **biopsy** are invasive and slow, while **AI
 - **Bias in AI Models:** Many models are trained on light-skinned images, yielding poor performance for dark-skinned patients.
 - **Attempts at Fairness:** Previous work includes dataset creation (e.g., Barros et al., 2023) and synthetic image generation (e.g., Rezk et al., 2022), but limitations remain.
 - **Need for Realism:** Synthetic dark-skin images often lack accurate visual and diagnostic characteristics, limiting their effectiveness in training.
+![Classical Data Augmentation Techniques](figs/classic_image_augmentation.png)
 
 ---
 
