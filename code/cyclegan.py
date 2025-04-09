@@ -11,16 +11,25 @@ class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
         
-        # Define the layers for the generator
-        self.model = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=7, stride=1, padding=3),
-            nn.ReLU(),
-            nn.Conv2d(64, 3, kernel_size=7, stride=1, padding=3),
-            nn.Tanh()  # normalized image
+        # Downsampling (encoder)
+        self.down1 = self.conv_block(3, 64, stride=2)
+        self.down2 = self.conv_block(64, 128, stride=2)
+        self.down3 = self.conv_block(128, 256, stride=2)
+        self.down4 = self.conv_block(256, 512, stride=2)
+
+        # Upsampling (decoder)
+        self.up1 = self.upconv_block(512, 256)
+        self.up2 = self.upconv_block(256, 128)
+        self.up3 = self.upconv_block(128, 64)
+        self.up4 = self.upconv_block(64, 3, final_layer=True)
+    
+    def conv_block(self, in_channels, out_channels, stride=1):
+        return nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=stride, padding=1),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm2d(out_channels)
         )
     
-    def forward(self, x):
-        return self.model(x)
 
 class Discriminator(nn.Module):
     def __init__(self):
