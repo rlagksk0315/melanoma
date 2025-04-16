@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from cyclegan import Generator, Discriminator, adversarial_loss, cycle_loss, identity_loss
-# from cyclegan import cyclegan_model #depends on name of model
+import itertools
 
 #Load dataset
 batch_size = 1
