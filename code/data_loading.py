@@ -41,7 +41,7 @@ class DDIDataset(Dataset):
                 "skin_tone": skin_label, 
                 "malignant": malignant}
     
-    class HAMDataset(Dataset):
+class HAMDataset(Dataset):
     """
     Args:
         data_dir (str): path to folder containing HAM10000 images.
