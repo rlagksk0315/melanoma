@@ -42,47 +42,47 @@ class DDIDataset(Dataset):
                 "malignant": malignant}
     
     class HAMDataset(Dataset):
-    """
-    Args:
-        data_dir (str): path to folder containing HAM10000 images.
-        csv_file (str): path to HAM10000_metadata.csv.
-        transform (callable, optional): torchvision transforms to apply.
-    """
-    def __init__(self, data_dir, csv_file, transform=None):
-        self.data_dir = data_dir
-        self.transform = transform
+        """
+        Args:
+            data_dir (str): path to folder containing HAM10000 images.
+            csv_file (str): path to HAM10000_metadata.csv.
+            transform (callable, optional): torchvision transforms to apply.
+        """
+        def __init__(self, data_dir, csv_file, transform=None):
+            self.data_dir = data_dir
+            self.transform = transform
+            
+            df = pd.read_csv(csv_file)
+            df["image_id"] = df["image_id"].astype(str)
+            self.meta = df.set_index("image_id")
+            
+            self.image_files = [
+                fname for fname in os.listdir(data_dir)
+                if os.path.splitext(fname)[1].lower() in {".jpg", ".jpeg", ".png"}
+            ]
         
-        df = pd.read_csv(csv_file)
-        df["image_id"] = df["image_id"].astype(str)
-        self.meta = df.set_index("image_id")
+        def __len__(self):
+            return len(self.image_files)
         
-        self.image_files = [
-            fname for fname in os.listdir(data_dir)
-            if os.path.splitext(fname)[1].lower() in {".jpg", ".jpeg", ".png"}
-        ]
-    
-    def __len__(self):
-        return len(self.image_files)
-    
-    def __getitem__(self, idx):
-        fname = self.image_files[idx]
-        image_id, _ = os.path.splitext(fname)
-        
-        row = self.meta.loc[image_id]
-        lesion_id = row["lesion_id"]
-        dx = row["dx"].strip().lower()
-        malignant = (dx == "melanoma")
-        
-        img_path = os.path.join(self.data_dir, fname)
-        image = Image.open(img_path).convert("RGB")
-        if self.transform:
-            image = self.transform(image)
-        
-        return {
-            "image": image,
-            "lesion_id": lesion_id,
-            "malignant": malignant
-        }
+        def __getitem__(self, idx):
+            fname = self.image_files[idx]
+            image_id, _ = os.path.splitext(fname)
+            
+            row = self.meta.loc[image_id]
+            lesion_id = row["lesion_id"]
+            dx = row["dx"].strip().lower()
+            malignant = (dx == "melanoma")
+            
+            img_path = os.path.join(self.data_dir, fname)
+            image = Image.open(img_path).convert("RGB")
+            if self.transform:
+                image = self.transform(image)
+            
+            return {
+                "image": image,
+                "lesion_id": lesion_id,
+                "malignant": malignant
+            }
 
 # load ddi and HAM10000 data
 ddi_data_dir = "../data/ddi_cropped"
