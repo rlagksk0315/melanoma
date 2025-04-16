@@ -92,5 +92,3 @@ def cycle_loss(real_image, reconstructed_image):
 def identity_loss(real_image, generated_image):
     return nn.L1Loss()(real_image, generated_image)
 
-
-
