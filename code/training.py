@@ -2,6 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from data_loading import get_dataloaders
@@ -18,6 +19,8 @@ num_workers = 4
 seed = 42
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# macbook
+# device = torch.device
 # version = 'v1'
 
 # Load dataset
@@ -30,29 +33,15 @@ ham_loader_train, ham_loader_val, ham_loader_test) = get_dataloaders(ddi_data_di
                                                                     num_workers=num_workers,
                                                                     seed=seed)
 
-train_loader = torch.utils.data.DataLoader(
-    ddi_loader_train + ham_loader_train,
-    batch_size=batch_size,
-    shuffle=True,
-    num_workers=num_workers,
-    pin_memory=True,
-)
+combined_train_dataset = torch.utils.data.ConcatDataset([ddi_loader_train.dataset, ham_loader_train.dataset])
+train_loader = DataLoader(combined_train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
 
-validation_loader = torch.utils.data.DataLoader(
-    ddi_loader_val + ham_loader_val,
-    batch_size=batch_size,
-    shuffle=False,
-    num_workers=num_workers,
-    pin_memory=True,
-)
+combined_val_dataset = torch.utils.data.ConcatDataset([ddi_loader_val.dataset, ham_loader_val.dataset])
+val_loader = DataLoader(combined_val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
-test_loader = torch.utils.data.DataLoader(
-    ddi_loader_test + ham_loader_test,
-    batch_size=batch_size,
-    shuffle=False,
-    num_workers=num_workers,
-    pin_memory=True,
-)
+combined_test_dataset = torch.utils.data.ConcatDataset([ddi_loader_test.dataset, ham_loader_test.dataset])
+test_loader = DataLoader(combined_test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+
 # Set random seed for reproducibility
 torch.manual_seed(seed)
 
