@@ -10,7 +10,7 @@ import multiprocessing
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from cyclegan import Generator, Discriminator, adversarial_loss, cycle_loss, identity_loss
+from cyclegan import Generator, Discriminator, generator_adversarial_loss, discriminator_adversarial_loss, cycle_loss, identity_loss
 import itertools
 
 # Hyperparameters
@@ -77,6 +77,8 @@ def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, 
         for batch_idx, (real_X, real_Y) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
             real_X, real_Y = real_X.to(device), real_Y.to(device)
 
+            # ==========================GENERATOR==========================
+
             # Train generators
             optimizer_for_generators.zero_grad()
 
@@ -87,8 +89,8 @@ def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, 
             cycle_Y = generate_XtoY(fake_X) # Reconstruct Y from fake X
 
             # Adversarial loss
-            loss_G_XtoY = adversarial_loss(Discriminator_Y, real_Y, fake_Y)
-            loss_G_YtoX = adversarial_loss(Discriminator_X, real_X, fake_X)
+            loss_G_XtoY = generator_adversarial_loss(Discriminator_Y, fake_Y)
+            loss_G_YtoX = generator_adversarial_loss(Discriminator_X, fake_X)
 
             # Cycle consistency loss 
             loss_cycle_X = cycle_loss(real_X, cycle_X)
@@ -105,25 +107,27 @@ def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, 
                 loss_G_XtoY + loss_G_YtoX + 10 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
             )
 
-            # Train discriminators
+            total_loss_generator.backward()
+            optimizer_for_generators.step()
+
+            # ==========================DISCRIMINATOR==========================
+
+            # Train discriminator X
             optimizer_discriminator_X.zero_grad()
-            optimizer_discriminator_Y.zero_grad()
 
             # Discriminator X loss
-            loss_discriminator_X_real = adversarial_loss(Discriminator_X, real_X, real_X)
-            loss_discriminator_X_fake = adversarial_loss(Discriminator_X(fake_X.detach()), torch.zeros_like(Discriminator_X(fake_X)))
-            loss_discriminator_X = (loss_discriminator_X_real + loss_discriminator_X_fake) / 2
-            loss_discriminator_X.backward()
-            optimizer_discriminator_X
+            loss_discriminator_X = discriminator_adversarial_loss(Discriminator_X, real_X, fake_X)
 
-            #Discriminator Y loss
-            loss_discriminator_Y_real = adversarial_loss(Discriminator_Y(real_Y), torch.ones_like(Discriminator_Y(real_Y)))
-            loss_discriminator_Y_fake = adversarial_loss(Discriminator_Y(fake_Y.detach()), torch.zeros_like(Discriminator_Y(fake_Y)))
-            loss_discriminator_Y = (loss_discriminator_Y_real + loss_discriminator_Y_fake) / 2
+            loss_discriminator_X.backward()
+            optimizer_discriminator_X.step()
+
+            # Discriminator Y loss
+            loss_discriminator_Y = generator_adversarial_loss(Discriminator_Y, real_Y, fake_Y)
+            
             loss_discriminator_Y.backward()
             optimizer_discriminator_Y.step()
         
-        return total_loss_generator, loss_discriminator_X, loss_discriminator_Y
+        return total_loss_generator, loss_discriminator_X.item(), loss_discriminator_Y.item()
 
 #validation
 def validate_cyclegan(generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, validation_loader, device):
