@@ -75,7 +75,7 @@ def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, 
 
     for epoch in range(epochs):
         loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")
-        for batch_idx, (real_X, real_Y) in loop:
+        for real_X, real_Y in loop:
             real_X, real_Y = real_X.to(device), real_Y.to(device)
 
             # ==========================GENERATOR==========================
@@ -103,8 +103,8 @@ def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, 
             loss_identity_X = identity_loss(real_X, identity_X)
             loss_identity_Y = identity_loss(real_Y, identity_Y)
 
-            #total generator loss
-            total_loss_generator = (
+            # total generator loss
+            loss_generator = (
                 loss_G_XtoY + loss_G_YtoX + 10 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
             )
 
@@ -116,22 +116,33 @@ def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, 
             # Train discriminator X
             optimizer_discriminator_X.zero_grad()
 
-            # Discriminator X loss
             loss_discriminator_X = discriminator_adversarial_loss(Discriminator_X, real_X, fake_X)
-
+            
             loss_discriminator_X.backward()
             optimizer_discriminator_X.step()
 
             # Discriminator Y loss
-            loss_discriminator_Y = generator_adversarial_loss(Discriminator_Y, real_Y, fake_Y)
+            optimizer_discriminator_Y.zero_grad()
+
+            loss_discriminator_Y = discriminator_adversarial_loss(Discriminator_Y, real_Y, fake_Y)
             
             loss_discriminator_Y.backward()
             optimizer_discriminator_Y.step()
+
+            # Accumulate losses
+            total_generator_loss += loss_generator.item()
+            total_discriminator_X_loss += loss_discriminator_X.item()
+            total_discriminator_Y_loss += loss_discriminator_Y.item()
+
+        # Average Losses
+        average_generator_loss = total_generator_loss / len(train_loader)
+        average_discriminator_X_loss = total_discriminator_X_loss / len(train_loader)
+        average_discriminator_Y_loss = total_discriminator_Y_loss / len(train_loader)
         
-        return total_loss_generator, loss_discriminator_X.item(), loss_discriminator_Y.item()
+        return average_generator_loss.item(), average_discriminator_X_loss.item(), average_discriminator_Y_loss.item()
 
 #validation
-def validate_cyclegan(generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, validation_loader, device):
+def validate_cyclegan(validation_loader, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
     generate_XtoY.eval()
     generate_YtoX.eval()
     Discriminator_X.eval()
@@ -145,25 +156,26 @@ def validate_cyclegan(generate_XtoY, generate_YtoX, Discriminator_X, Discriminat
         for real_X, real_Y in tqdm(validation_loader, desc='Validation'):
             real_X, real_Y = real_X.to(device), real_Y.to(device)
 
-            # Generator Forward Pass
+            # ==========================GENERATOR==========================
+
             fake_Y = generate_XtoY(real_X)
             fake_X = generate_YtoX(real_Y)
             cycle_X = generate_YtoX(fake_Y)
             cycle_Y = generate_XtoY(fake_X)
 
-            # Adversarial Loss 
-            loss_G_XtoY = adversarial_loss(Discriminator_Y(fake_Y), torch.ones_like(Discriminator_Y(fake_Y))) #how well generator fools discriminator
-            loss_G_YtoX = adversarial_loss(Discriminator_X(fake_X), torch.ones_like(Discriminator_X(fake_X)))
+            # Adversarial loss
+            loss_G_XtoY = generator_adversarial_loss(Discriminator_Y, fake_Y)
+            loss_G_YtoX = generator_adversarial_loss(Discriminator_X, fake_X)
 
-            # Cycle consistency loss
-            loss_cycle_X = cycle_loss_func(real_X, cycle_X)
-            loss_cycle_Y = cycle_loss_func(real_Y, cycle_Y)
+            # Cycle consistency loss 
+            loss_cycle_X = cycle_loss(real_X, cycle_X)
+            loss_cycle_Y = cycle_loss(real_Y, cycle_Y)
 
-            # Identity loss
+            # Identity loss 
             identity_X = generate_YtoX(real_X)
             identity_Y = generate_XtoY(real_Y)
-            loss_identity_X = identity_loss_func(real_X, identity_X)
-            loss_identity_Y = identity_loss_func(real_Y, identity_Y)
+            loss_identity_X = identity_loss(real_X, identity_X)
+            loss_identity_Y = identity_loss(real_Y, identity_Y)
 
             # Total generator loss 
             loss_generator = (
@@ -172,19 +184,17 @@ def validate_cyclegan(generate_XtoY, generate_YtoX, Discriminator_X, Discriminat
                 5 * (loss_identity_X + loss_identity_Y)
             )
 
-            # Discrimnator loss
-            loss_discriminator_X_real = adversarial_loss_func(Discriminator_X(real_X), torch.ones_like(Discriminator_X(real_X)))
-            loss_discriminator_X_fake = adversarial_loss_func(Discriminator_X(fake_X), torch.zeros_like(Discriminator_X(fake_X)))
-            loss_discriminator_X = (loss_discriminator_X_real + loss_discriminator_X_fake) / 2  
+            # ==========================DISCRIMINATOR==========================
 
-            loss_discriminator_Y_real = adversarial_loss_func(Discriminator_Y(real_Y), torch.ones_like(Discriminator_Y(real_Y)))
-            loss_discriminator_Y_fake = adversarial_loss_func(Discriminator_Y(fake_Y), torch.zeros_like(Discriminator_Y(fake_Y)))
-            loss_discriminator_Y = (loss_discriminator_Y_real + loss_discriminator_Y_fake) / 2
-
-            # accumulate losses
+            loss_discriminator_X = discriminator_adversarial_loss(Discriminator_X, real_X, fake_X)
+            loss_discriminator_Y = discriminator_adversarial_loss(Discriminator_Y, real_Y, fake_Y)
+            
+            # Accumulate losses
             total_generator_loss += loss_generator.item()
             total_discriminator_X_loss += loss_discriminator_X.item()
-            total_discriminator_Y_loss += loss_discriminator_Y.item()   
+            total_discriminator_Y_loss += loss_discriminator_Y.item()
+
+    # Average Losses
     average_generator_loss = total_generator_loss / len(validation_loader)
     average_discriminator_X_loss = total_discriminator_X_loss / len(validation_loader)
     average_discriminator_Y_loss = total_discriminator_Y_loss / len(validation_loader)
@@ -256,11 +266,11 @@ def main():
             )
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
+                validation_loader = val_loader,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
                 Discriminator_Y = Discriminator_Y,
-                validation_loader = val_loader,
                 device = device
             )
 
