@@ -6,7 +6,7 @@ from train import train
 from evaluate import evaluate
 
 def main():
-    os.chdir('/scratch4/en520-lmorove1/en520-ikarhul1/melanoma/classification')
+    #os.chdir('/scratch4/en520-lmorove1/en520-ikarhul1/melanoma/classification')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     df = load_metadata('../data/HAM10000/HAM10000_metadata.csv')
     train_df, val_df, test_df = split_data(df)

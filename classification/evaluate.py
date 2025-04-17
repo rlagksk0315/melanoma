@@ -5,12 +5,13 @@ def evaluate(model, data_loader, device):
     model.eval()
     all_preds, all_labels = [], []
     with torch.no_grad():
-        for images, labels in data_loader:
-            images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            _, preds = torch.max(outputs, 1)
+        for data, targets in data_loader:
+            data, targets = data.to(device), targets.to(device)
+            outputs = model(data)
+            probs = torch.sigmoid(outputs).squeeze()
+            preds = (probs > 0.5).float()
             all_preds.extend(preds.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+            all_labels.extend(targets.cpu().numpy())
     metrics = {
         'accuracy': accuracy_score(all_labels, all_preds),
         'precision': precision_score(all_labels, all_preds),

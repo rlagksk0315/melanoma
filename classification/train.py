@@ -14,23 +14,25 @@ def train(model, train_loader, val_loader, class_ratio, device, epochs=10, lr=1e
 
     for epoch in range(epochs):
         model.train()
-        for images, labels in train_loader:
-            images, labels = images.to(device), labels.to(device)
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+        for batch_idx, (data, targets) in enumerate(train_loader):
+            data = data.to(device)
+            targets = targets.unsqueeze(1).float().to(device)
+            outputs = model(data)
+            loss = criterion(outputs, targets)
             loss.backward()
             optimizer.step()
 
         model.eval()
         val_preds, val_labels = [], []
         with torch.no_grad():
-            for images, labels in val_loader:
-                images, labels = images.to(device), labels.to(device)
-                outputs = model(images)
-                _, preds = torch.max(outputs, 1)
+            for batch_idx, (data, targets) in enumerate(val_loader):
+                data = data.to(device)
+                targets = targets.unsqueeze(1).float().to(device)
+                outputs = model(data)
+                probs = torch.sigmoid(outputs).squeeze()
+                preds = (probs > 0.5).float()
                 val_preds.extend(preds.cpu().numpy())
-                val_labels.extend(labels.cpu().numpy())
+                val_labels.extend(targets.cpu().numpy())
         val_acc = accuracy_score(val_labels, val_preds)
         print(f"Epoch {epoch+1}/{epochs}, Validation Accuracy: {val_acc:.4f}")
 
