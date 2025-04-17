@@ -37,8 +37,8 @@ class DDIDataset(Dataset):
         if self.transform:
             img = self.transform(img)
         skin_lbl = 0 if row["skin_tone"] < self.skin_threshold else 1
-        malignant = int(row["malignant"])
-        return img, skin_lbl, malignant
+        disease = row["disease"]
+        return img, skin_lbl, disease
     
 class HAMDataset(Dataset):
     def __init__(self, data_dir, csv_file, transform=None, file_list=None):
@@ -58,7 +58,7 @@ class HAMDataset(Dataset):
 
         files = [
             f for f in os.listdir(data_dir)
-            if os.path.splitext(f)[1].lower() in {".jpg", ".jpeg", ".png"}
+            if os.path.splitext(f)[1].lower() in {".jpg"}
         ]
         if file_list is not None:
             files = [f for f in files if f in file_list]
@@ -112,38 +112,7 @@ def display_image(image_tensor):
     plt.axis('off')
     plt.show()
 
-
-# ================================================================================
-# main function to load data
-# ================================================================================
-
-if __name__ == "__main__":
-    # set paths to directories
-    # load ddi and HAM10000 data
-    ddi_data_dir = "../data/ddi_cropped"
-    print(len(os.listdir(ddi_data_dir)))
-
-    ham_data_dir = "../data/HAM10000"
-    print(len(os.listdir(ham_data_dir)))
-
-    # label the data according to their information
-    ddi_label_file = os.path.join(ddi_data_dir, "ddi_metadata.csv")
-    ham_label_file = os.path.join(ham_data_dir, "HAM10000_metadata.csv")
-    df_ddi = pd.read_csv(ddi_label_file)
-    df_ham = pd.read_csv(ham_label_file)
-
-    # split the data into train, val, and test sets
-    train_files_ddi, val_files_ddi, test_files_ddi = split_data(ddi_data_dir)
-    train_files_ham, val_files_ham, test_files_ham = split_data(ham_data_dir)
-
-    print("number of train images for ddi:", len(train_files_ddi))
-    print("number of val images for ddi:", len(val_files_ddi))
-    print("number of test images for ddi:", len(test_files_ddi))
-    print("------------------------------")
-    print("number of train images for ham:", len(train_files_ham))
-    print("number of val images for ham:", len(val_files_ham))
-    print("number of test images for ham:", len(test_files_ham))
-
+def get_dataloaders(ddi_data_dir, ham_data_dir, batch_size=32, num_workers=4, seed=42):
     # define transformations
     train_transform = transforms.Compose([
         transforms.Resize((224,224)),
@@ -151,16 +120,23 @@ if __name__ == "__main__":
         transforms.RandomHorizontalFlip(0.5),
         transforms.RandomGrayscale(0.2),
         transforms.ToTensor(),
+        transforms.Normalize(mean=(0.485, 0.456, 0.406), std =(0.229, 0.224, 0.225)),
     ])
 
     eval_transform = transforms.Compose([
         transforms.Resize((224,224)),
         transforms.ToTensor(),
+        transforms.Normalize(mean=(0.485, 0.456, 0.406), std =(0.229, 0.224, 0.225)),
     ])
 
-    # load data
-    batch_size = 32
+    ddi_label_file = os.path.join(ddi_data_dir, "ddi_metadata.csv")
+    ham_label_file = os.path.join(ham_data_dir, "HAM10000_metadata.csv")
+    
+    # split the data into train, val, and test sets
+    train_files_ddi, val_files_ddi, test_files_ddi = split_data(ddi_data_dir)
+    train_files_ham, val_files_ham, test_files_ham = split_data(ham_data_dir)
 
+    # create data loaders
     ddi_loader_train, ddi_loader_val, ddi_loader_test = [
         load_data_ddi(
             ddi_data_dir,
@@ -191,9 +167,21 @@ if __name__ == "__main__":
         ]
     ]
 
+    return (ddi_loader_train, ddi_loader_val, ddi_loader_test), (ham_loader_train, ham_loader_val, ham_loader_test)
+
+# ================================================================================
+# main function to load data
+# ================================================================================
+
+if __name__ == "__main__":
+    (ddi_train_loader, ddi_val_loader, ddi_test_loader), (ham_train_loader, ham_val_loader, ham_test_loader) = get_dataloaders(ddi_data_dir, ham_data_dir, batch_size)
+    print('Data loading complete!')
+
+    '''
     # display some images
-    for images, skin_labels, malignant_labels in ddi_loader_train:
+    for images, skin_labels, disease_labels in ddi_loader_train:
         for i in range(4):
             display_image(images[i])
-            print(f"Skin Tone: {skin_labels[i]}, Malignant: {malignant_labels[i]}")
+            print(f"Skin Tone: {skin_labels[i]}, Malignant: {disease_labels[i]}")
         break
+    '''

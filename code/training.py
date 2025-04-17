@@ -1,9 +1,10 @@
+import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from data_loading import load_data # data_loading.py
+from data_loading import get_dataloaders
 import multiprocessing
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -11,14 +12,49 @@ import numpy as np
 from cyclegan import Generator, Discriminator, adversarial_loss, cycle_loss, identity_loss
 import itertools
 
-#Load dataset
-batch_size = 1
-train_loader, validation_loader, test_loader, classes, batch_size = load_data(batch_size)
-
 # Hyperparameters
+batch_size = 32
+num_workers = 4
+seed = 42
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # version = 'v1'
+
+# Load dataset
+ddi_data_dir = "../data/ddi_cropped"
+ham_data_dir = "../data/HAM10000"
+(ddi_loader_train, ddi_loader_val, ddi_loader_test,
+ham_loader_train, ham_loader_val, ham_loader_test) = get_dataloaders(ddi_data_dir,
+                                                                    ham_data_dir,
+                                                                    batch_size=batch_size,
+                                                                    num_workers=num_workers,
+                                                                    seed=seed)
+
+train_loader = torch.utils.data.DataLoader(
+    ddi_loader_train + ham_loader_train,
+    batch_size=batch_size,
+    shuffle=True,
+    num_workers=num_workers,
+    pin_memory=True,
+)
+
+validation_loader = torch.utils.data.DataLoader(
+    ddi_loader_val + ham_loader_val,
+    batch_size=batch_size,
+    shuffle=False,
+    num_workers=num_workers,
+    pin_memory=True,
+)
+
+test_loader = torch.utils.data.DataLoader(
+    ddi_loader_test + ham_loader_test,
+    batch_size=batch_size,
+    shuffle=False,
+    num_workers=num_workers,
+    pin_memory=True,
+)
+# Set random seed for reproducibility
+torch.manual_seed(seed)
 
 # Initialize the model
 '''
@@ -280,4 +316,3 @@ if __name__ == '__main__':
     multiprocessing.freeze_support()
     # Main training loop
     main()
-
