@@ -79,9 +79,12 @@ class Discriminator(nn.Module):
 # Binary Cross-Entropy Loss (for Discriminators)
 criterion = nn.BCELoss()
 
-def adversarial_loss(D, real, fake):
+def generator_adversarial_loss(D, fake):
+    return criterion(D(fake), torch.ones_like(D(fake)))
+
+def discriminator_adversarial_loss(D, real, fake):
     real_loss = criterion(D(real), torch.ones_like(D(real)))
-    fake_loss = criterion(D(fake), torch.zeros_like(D(fake)))
+    fake_loss = criterion(D(fake.detach()), torch.zeros_like(D(fake.detach())))
     return (real_loss + fake_loss) / 2
 
 # 2. Cycle Consistency Loss

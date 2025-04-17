@@ -169,14 +169,14 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, batch_size=32, num_workers=4, se
         ]
     ]
 
-    return (ddi_loader_train, ddi_loader_val, ddi_loader_test), (ham_loader_train, ham_loader_val, ham_loader_test)
+    return ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_val, ham_loader_test
 
 # ================================================================================
 # main function to load data
 # ================================================================================
 
 if __name__ == "__main__":
-    (ddi_train_loader, ddi_val_loader, ddi_test_loader), (ham_train_loader, ham_val_loader, ham_test_loader) = get_dataloaders(ddi_data_dir, ham_data_dir, batch_size)
+    ddi_train_loader, ddi_val_loader, ddi_test_loader, ham_train_loader, ham_val_loader, ham_test_loader = get_dataloaders(ddi_data_dir, ham_data_dir, batch_size)
     print('Data loading complete!')
 
     '''
