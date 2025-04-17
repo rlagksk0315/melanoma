@@ -74,7 +74,8 @@ def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, 
     total_loss_discriminator_Y = 0.0
 
     for epoch in range(epochs):
-        for batch_idx, (real_X, real_Y) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
+        loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")
+        for batch_idx, (real_X, real_Y) in loop:
             real_X, real_Y = real_X.to(device), real_Y.to(device)
 
             # ==========================GENERATOR==========================
