@@ -1,11 +1,12 @@
 import torch
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+import tqdm
 
-def evaluate(model, data_loader, device):
+def evaluate(model, test_loader, device):
     model.eval()
     all_preds, all_labels = [], []
     with torch.no_grad():
-        for data, targets in data_loader:
+        for data, targets in tqdm(test_loader, desc="Testing"):
             data, targets = data.to(device), targets.to(device)
             outputs = model(data)
             probs = torch.sigmoid(outputs).squeeze()

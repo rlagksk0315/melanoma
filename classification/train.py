@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from sklearn.metrics import accuracy_score
+import tqdm
 
 def train(model, train_loader, val_loader, class_ratio, device, epochs=10, lr=1e-3, save_path='models/best_model.pth'):
     class_weights = torch.tensor([class_ratio], dtype=torch.float32).to(device)
@@ -14,7 +15,7 @@ def train(model, train_loader, val_loader, class_ratio, device, epochs=10, lr=1e
 
     for epoch in range(epochs):
         model.train()
-        for batch_idx, (data, targets) in enumerate(train_loader):
+        for batch_idx, (data, targets) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
             data = data.to(device)
             targets = targets.unsqueeze(1).float().to(device)
             outputs = model(data)
@@ -25,9 +26,8 @@ def train(model, train_loader, val_loader, class_ratio, device, epochs=10, lr=1e
         model.eval()
         val_preds, val_labels = [], []
         with torch.no_grad():
-            for batch_idx, (data, targets) in enumerate(val_loader):
-                data = data.to(device)
-                targets = targets.unsqueeze(1).float().to(device)
+            for data, targets in tqdm(val_loader, desc=f"Validation"):
+                data, targets = data.to(device), targets.to(device)
                 outputs = model(data)
                 probs = torch.sigmoid(outputs).squeeze()
                 preds = (probs > 0.5).float()
