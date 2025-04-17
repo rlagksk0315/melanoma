@@ -37,8 +37,8 @@ class DDIDataset(Dataset):
         if self.transform:
             img = self.transform(img)
         skin_lbl = 0 if row["skin_tone"] < self.skin_threshold else 1
-        disease = row["disease"]
-        return img, skin_lbl, disease
+        malignant = int(row["malignant"])
+        return img, skin_lbl, malignant
     
 class HAMDataset(Dataset):
     def __init__(self, data_dir, csv_file, transform=None, file_list=None):
@@ -58,7 +58,7 @@ class HAMDataset(Dataset):
 
         files = [
             f for f in os.listdir(data_dir)
-            if os.path.splitext(f)[1].lower() in {".jpg"}
+            if os.path.splitext(f)[1].lower() == ".jpg"
         ]
         if file_list is not None:
             files = [f for f in files if f in file_list]
@@ -74,7 +74,7 @@ class HAMDataset(Dataset):
         row = self.meta.loc[image_id]
         dx = row["dx"].strip().lower()
         malignant = int(dx == "melanoma")
-
+        
         img = Image.open(os.path.join(self.data_dir, fname)).convert("RGB")
         if self.transform:
             img = self.transform(img)
@@ -133,13 +133,15 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, batch_size=32, num_workers=4, se
     ham_label_file = os.path.join(ham_data_dir, "HAM10000_metadata.csv")
     
     # split the data into train, val, and test sets
-    train_files_ddi, val_files_ddi, test_files_ddi = split_data(ddi_data_dir)
-    train_files_ham, val_files_ham, test_files_ham = split_data(ham_data_dir)
+    ddi_image_dir = os.path.join(ddi_data_dir, "images")
+    ham_image_dir = os.path.join(ham_data_dir, "images")
+    train_files_ddi, val_files_ddi, test_files_ddi = split_data(ddi_image_dir)
+    train_files_ham, val_files_ham, test_files_ham = split_data(ham_image_dir)
 
     # create data loaders
     ddi_loader_train, ddi_loader_val, ddi_loader_test = [
         load_data_ddi(
-            ddi_data_dir,
+            ddi_image_dir,
             ddi_label_file,
             files,
             transform,
@@ -154,7 +156,7 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, batch_size=32, num_workers=4, se
 
     ham_loader_train, ham_loader_val, ham_loader_test = [
         load_data_ham(
-            ham_data_dir,
+            ham_image_dir,
             ham_label_file,
             files,
             transform,

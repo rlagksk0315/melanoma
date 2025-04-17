@@ -14,9 +14,10 @@ from cyclegan import Generator, Discriminator, adversarial_loss, cycle_loss, ide
 import itertools
 
 # Hyperparameters
-batch_size = 32
+batch_size = 1
 num_workers = 4
 seed = 42
+epochs = 100
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # macbook
@@ -259,7 +260,7 @@ def main():
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
                 Discriminator_Y = Discriminator_Y,
-                validation_loader = validation_loader,
+                validation_loader = val_loader,
                 device = device
             )
 
