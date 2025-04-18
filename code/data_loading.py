@@ -38,7 +38,8 @@ class DDIDataset(Dataset):
             img = self.transform(img)
         skin_lbl = 0 if row["skin_tone"] < self.skin_threshold else 1
         malignant = int(row["malignant"])
-        return img, skin_lbl, malignant
+        #return img, skin_lbl, malignant
+        return img
     
 class HAMDataset(Dataset):
     def __init__(self, data_dir, csv_file, transform=None, file_list=None):
@@ -79,7 +80,8 @@ class HAMDataset(Dataset):
         if self.transform:
             img = self.transform(img)
 
-        return img, malignant
+        #return img, malignant
+        return img
     
 # data splitting
 # train: 60%, val: 20%, test: 20%

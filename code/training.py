@@ -4,12 +4,12 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from data_loading import get_dataloaders
 import multiprocessing
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from torchvision import transforms
 from cyclegan import Generator, Discriminator, generator_adversarial_loss, discriminator_adversarial_loss, cycle_loss, identity_loss
 import itertools
 
@@ -17,7 +17,7 @@ import itertools
 batch_size = 1
 num_workers = 4
 seed = 42
-epochs = 100
+epochs = 1
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # macbook
@@ -33,14 +33,16 @@ ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_
                                                                                                                         num_workers=num_workers,
                                                                                                                         seed=seed)
 
-combined_train_dataset = torch.utils.data.ConcatDataset([ddi_loader_train.dataset, ham_loader_train.dataset])
+'''
+combined_train_dataset = torch.utils.data.ConcatDataset([ham_loader_train.dataset, ddi_loader_train.dataset])
 train_loader = DataLoader(combined_train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
 
-combined_val_dataset = torch.utils.data.ConcatDataset([ddi_loader_val.dataset, ham_loader_val.dataset])
+combined_val_dataset = torch.utils.data.ConcatDataset([ham_loader_val.dataset, ddi_loader_val.dataset])
 val_loader = DataLoader(combined_val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
-combined_test_dataset = torch.utils.data.ConcatDataset([ddi_loader_test.dataset, ham_loader_test.dataset])
+combined_test_dataset = torch.utils.data.ConcatDataset([ham_loader_test.dataset, ddi_loader_test.dataset])
 test_loader = DataLoader(combined_test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+'''
 
 # Set random seed for reproducibility
 torch.manual_seed(seed)
@@ -62,99 +64,101 @@ optimizer_discriminator_X = optim.Adam(Discriminator_X.parameters(), lr=learning
 optimizer_discriminator_Y = optim.Adam(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 
 # Training
-def train_cyclegan(train_loader, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
+def train_cyclegan(ham_loader_train, ddi_loader_train, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
     # model.train() # Model in training mode
     generate_XtoY.train()
     generate_YtoX.train()
     Discriminator_X.train()
     Discriminator_Y.train()
 
-    total_loss_generator = 0.0
-    total_loss_discriminator_X = 0.0
-    total_loss_discriminator_Y = 0.0
+    total_generator_loss, total_discriminator_X_loss, total_discriminator_Y_loss = torch.tensor(0.0, device=device), torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
+    n = 0 # batch
 
-    for epoch in range(epochs):
-        loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")
-        for real_X, real_Y in loop:
-            real_X, real_Y = real_X.to(device), real_Y.to(device)
+    loop = tqdm(zip(ham_loader_train, ddi_loader_train), total=min(len(ham_loader_train), len(ddi_loader_train)))
+    for ham_batch, ddi_batch in loop:
+        real_X = ham_batch.float().to(device) # reference HAM
+        real_Y = ddi_batch.float().to(device) # reference DDI
+        n += 1
+        
+        # ==========================GENERATOR==========================
 
-            # ==========================GENERATOR==========================
+        # Train generators
+        optimizer_for_generators.zero_grad()
 
-            # Train generators
-            optimizer_for_generators.zero_grad()
+        #forward pass
+        fake_Y = generate_XtoY(real_X) # light skinned DDI
+        fake_X = generate_YtoX(real_Y) # dark skinned HAM
+        cycle_X = generate_YtoX(fake_Y) # Reconstruct X from fake Y
+        cycle_Y = generate_XtoY(fake_X) # Reconstruct Y from fake X
 
-            #forward pass
-            fake_Y = generate_XtoY(real_X) # generate fake Y from X
-            fake_X = generate_YtoX(real_Y) # generate fake X from Y
-            cycle_X = generate_YtoX(fake_Y) # Reconstruct X from fake Y
-            cycle_Y = generate_XtoY(fake_X) # Reconstruct Y from fake X
+        # Adversarial loss
+        loss_G_XtoY = generator_adversarial_loss(Discriminator_Y, fake_Y)
+        loss_G_YtoX = generator_adversarial_loss(Discriminator_X, fake_X)
 
-            # Adversarial loss
-            loss_G_XtoY = generator_adversarial_loss(Discriminator_Y, fake_Y)
-            loss_G_YtoX = generator_adversarial_loss(Discriminator_X, fake_X)
+        # Cycle consistency loss 
+        loss_cycle_X = cycle_loss(real_X, cycle_X)
+        loss_cycle_Y = cycle_loss(real_Y, cycle_Y)
 
-            # Cycle consistency loss 
-            loss_cycle_X = cycle_loss(real_X, cycle_X)
-            loss_cycle_Y = cycle_loss(real_Y, cycle_Y)
+        # Identity loss 
+        identity_X = generate_YtoX(real_X)
+        identity_Y = generate_XtoY(real_Y)
+        loss_identity_X = identity_loss(real_X, identity_X)
+        loss_identity_Y = identity_loss(real_Y, identity_Y)
 
-            # Identity loss 
-            identity_X = generate_YtoX(real_X)
-            identity_Y = generate_XtoY(real_Y)
-            loss_identity_X = identity_loss(real_X, identity_X)
-            loss_identity_Y = identity_loss(real_Y, identity_Y)
+        # total generator loss
+        loss_generator = (
+            loss_G_XtoY + loss_G_YtoX + 10 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
+        )
 
-            # total generator loss
-            loss_generator = (
-                loss_G_XtoY + loss_G_YtoX + 10 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
-            )
+        loss_generator.backward()
+        optimizer_for_generators.step()
+        total_generator_loss += loss_generator.item()
 
-            total_loss_generator.backward()
-            optimizer_for_generators.step()
+        # ==========================DISCRIMINATOR==========================
 
-            # ==========================DISCRIMINATOR==========================
+        # Train discriminator X
+        optimizer_discriminator_X.zero_grad()
 
-            # Train discriminator X
-            optimizer_discriminator_X.zero_grad()
+        loss_discriminator_X = discriminator_adversarial_loss(Discriminator_X, real_X, fake_X)
+        
+        loss_discriminator_X.backward()
+        optimizer_discriminator_X.step()
 
-            loss_discriminator_X = discriminator_adversarial_loss(Discriminator_X, real_X, fake_X)
-            
-            loss_discriminator_X.backward()
-            optimizer_discriminator_X.step()
+        # Discriminator Y loss
+        optimizer_discriminator_Y.zero_grad()
 
-            # Discriminator Y loss
-            optimizer_discriminator_Y.zero_grad()
+        loss_discriminator_Y = discriminator_adversarial_loss(Discriminator_Y, real_Y, fake_Y)
+        
+        loss_discriminator_Y.backward()
+        optimizer_discriminator_Y.step()
 
-            loss_discriminator_Y = discriminator_adversarial_loss(Discriminator_Y, real_Y, fake_Y)
-            
-            loss_discriminator_Y.backward()
-            optimizer_discriminator_Y.step()
-
-            # Accumulate losses
-            total_generator_loss += loss_generator.item()
-            total_discriminator_X_loss += loss_discriminator_X.item()
-            total_discriminator_Y_loss += loss_discriminator_Y.item()
+        # Accumulate losses
+        total_discriminator_X_loss += loss_discriminator_X.item()
+        total_discriminator_Y_loss += loss_discriminator_Y.item()
 
         # Average Losses
-        average_generator_loss = total_generator_loss / len(train_loader)
-        average_discriminator_X_loss = total_discriminator_X_loss / len(train_loader)
-        average_discriminator_Y_loss = total_discriminator_Y_loss / len(train_loader)
+        average_generator_loss = total_generator_loss / n
+        average_discriminator_X_loss = total_discriminator_X_loss / n
+        average_discriminator_Y_loss = total_discriminator_Y_loss / n
         
-        return average_generator_loss.item(), average_discriminator_X_loss.item(), average_discriminator_Y_loss.item()
+    return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
 
 #validation
-def validate_cyclegan(validation_loader, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
+def validate_cyclegan(ham_loader_val, ddi_loader_val, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device, epoch, image_path):
     generate_XtoY.eval()
     generate_YtoX.eval()
     Discriminator_X.eval()
     Discriminator_Y.eval()
 
-    total_generator_loss = 0.0
-    total_discriminator_X_loss = 0.0
-    total_discriminator_Y_loss = 0.0
+    total_generator_loss, total_discriminator_X_loss, total_discriminator_Y_loss = torch.tensor(0.0, device=device), torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
+    n = 0
 
     with torch.no_grad():
-        for real_X, real_Y in tqdm(validation_loader, desc='Validation'):
-            real_X, real_Y = real_X.to(device), real_Y.to(device)
+        loop = tqdm(zip(ham_loader_val, ddi_loader_val), total=min(len(ham_loader_val), len(ddi_loader_val)))
+        for ham_batch, ddi_batch in loop:
+            real_X = ham_batch.float().to(device)
+            real_Y = ddi_batch.float().to(device)
+            n += 1
 
             # ==========================GENERATOR==========================
 
@@ -195,16 +199,19 @@ def validate_cyclegan(validation_loader, generate_XtoY, generate_YtoX, Discrimin
             total_discriminator_Y_loss += loss_discriminator_Y.item()
 
     # Average Losses
-    average_generator_loss = total_generator_loss / len(validation_loader)
-    average_discriminator_X_loss = total_discriminator_X_loss / len(validation_loader)
-    average_discriminator_Y_loss = total_discriminator_Y_loss / len(validation_loader)
+    average_generator_loss = total_generator_loss / n
+    average_discriminator_X_loss = total_discriminator_X_loss / n
+    average_discriminator_Y_loss = total_discriminator_Y_loss / n
+
+    # Display images
+    display_images(image_path, real_X, fake_X, epoch)
 
     return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
 
 def visualize_metrics(train_generator_losses, val_generator_losses, 
-                      train_discriminator_X_losses, val_discriminator_X_losses,
-                      train_discriminator_Y_losses, val_discriminator_Y_losses):
-    
+                    train_discriminator_X_losses, val_discriminator_X_losses,
+                    train_discriminator_Y_losses, val_discriminator_Y_losses):
+
     # Plot for generator loss
     plt.figure()
     plt.plot(train_generator_losses, label='Train Generator Loss')
@@ -213,7 +220,7 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.ylabel('Loss')
     plt.legend()
     plt.title('Generator loss over Epochs')
-    plt.savefig('generator_loss.png')
+    plt.savefig('../results/generator_loss.png')
     plt.show()
 
     # Plot for discriminator X loss
@@ -224,7 +231,7 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.ylabel('Loss')
     plt.legend()
     plt.title('Discriminator X loss over Epochs')
-    plt.savefig('discriminator_X_loss.png')
+    plt.savefig('../results/discriminator_X_loss.png')
     plt.show()
 
     # Plot for discriminator Y loss
@@ -235,8 +242,52 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.ylabel('Loss')      
     plt.legend()
     plt.title('Discriminator Y loss over Epochs')
-    plt.savefig('discriminator_Y_loss.png')
+    plt.savefig('../results/discriminator_Y_loss.png')
     plt.show()
+
+
+# display images
+def display_images(image_path, real_X, fake_X, epoch, num_images=1):
+    """
+    Displays real and generated images for reference and comparison.
+    """
+
+    # Convert tensors to numpy arrays for displaying with matplotlib
+    real_X = real_X.cpu().detach() # HAM
+    fake_X = fake_X.cpu().detach() # dark skinned HAM
+
+    # squeeze the batch dimension
+    real_X = np.squeeze(real_X, axis=0)
+    fake_X = np.squeeze(fake_X, axis=0)
+
+    # Denormalize the images (reverse the normalization)
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    
+    real_X = real_X * std[:, None, None] + mean[:, None, None]
+    fake_X = fake_X * std[:, None, None] + mean[:, None, None]
+    
+    # Rescale from [-1, 1] to [0, 1]
+    real_X = np.clip(real_X, 0, 1)
+    fake_X = np.clip(fake_X, 0, 1)
+    
+    # Transpose the image from (C, H, W) to (H, W, C) for visualization
+    real_X = np.transpose(real_X, (1, 2, 0))
+    fake_X = np.transpose(fake_X, (1, 2, 0))
+    
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+
+    # Display real images
+    axes[0].imshow(real_X)
+    axes[0].set_title(f"Real X")
+    axes[0].axis('off')
+
+    # Display generated images
+    axes[1].imshow(fake_X)
+    axes[1].set_title(f"Fake X")
+    axes[1].axis('off')
+        
+    plt.savefig(f'{image_path}/epoch{epoch+1}_real_vs_fake.png')
 
 
 def main():
@@ -257,7 +308,8 @@ def main():
             print(f'Epoch {epoch + 1}/{epochs}')
             
             train_generator_loss, train_discriminator_X_loss, train_discriminator_Y_loss = train_cyclegan(
-                train_loader = train_loader,
+                ham_loader_train = ham_loader_train,
+                ddi_loader_train = ddi_loader_train,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
@@ -265,13 +317,19 @@ def main():
                 device = device
             )
 
+            validation_img_path = '../generated_images/validation' # path to save validation generated images
+            os.makedirs(validation_img_path, exist_ok=True)
+
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
-                validation_loader = val_loader,
+                ham_loader_val = ham_loader_val,
+                ddi_loader_val = ddi_loader_val,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
                 Discriminator_Y = Discriminator_Y,
-                device = device
+                device = device,
+                epoch = epoch,
+                image_path = validation_img_path
             )
 
             # log losses
@@ -286,7 +344,7 @@ def main():
                      f"{train_discriminator_X_loss:.4f}, {validate_discriminator_X_loss:.4f},"
                      f"{train_discriminator_Y_loss:.4f}, {validate_discriminator_Y_loss:.4f}\n")
             
-            print(f"[Epoch {epoch + 1}]")
+            #print(f"[Epoch {epoch + 1}]")
             print(f"Generator loss: Train = {train_generator_loss:.4f}, Validation = {validate_generator_loss:.4f}")
             print(f"Discriminator X loss: Train = {train_discriminator_X_loss:.4f}, Validation = {validate_discriminator_X_loss:.4f}")
             print(f"Discriminator Y loss: Train = {train_discriminator_Y_loss:.4f}, Validation = {validate_discriminator_Y_loss:.4f}")
@@ -306,8 +364,15 @@ def main():
         torch.save(best_model_state, 'best_cyclegan_model.pth')
         print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
+    train_generator_losses = torch.tensor(train_generator_losses)
+    val_generator_losses = torch.tensor(val_generator_losses)
+    train_discriminator_X_losses = torch.tensor(train_discriminator_X_losses)
+    val_discriminator_X_losses = torch.tensor(val_discriminator_X_losses)
+    train_discriminator_Y_losses = torch.tensor(train_discriminator_Y_losses)
+    val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
+    os.makedirs('../results', exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
                       train_discriminator_Y_losses, val_discriminator_Y_losses)
