@@ -17,7 +17,7 @@ import itertools
 batch_size = 1
 num_workers = 4
 seed = 42
-epochs = 1
+epochs = 100
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # macbook
@@ -210,7 +210,7 @@ def validate_cyclegan(ham_loader_val, ddi_loader_val, generate_XtoY, generate_Yt
 
 def visualize_metrics(train_generator_losses, val_generator_losses, 
                     train_discriminator_X_losses, val_discriminator_X_losses,
-                    train_discriminator_Y_losses, val_discriminator_Y_losses):
+                    train_discriminator_Y_losses, val_discriminator_Y_losses, results_path):
 
     # Plot for generator loss
     plt.figure()
@@ -220,7 +220,7 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.ylabel('Loss')
     plt.legend()
     plt.title('Generator loss over Epochs')
-    plt.savefig('../results/generator_loss.png')
+    plt.savefig(f'{results_path}/generator_loss.png')
     plt.show()
 
     # Plot for discriminator X loss
@@ -231,7 +231,7 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.ylabel('Loss')
     plt.legend()
     plt.title('Discriminator X loss over Epochs')
-    plt.savefig('../results/discriminator_X_loss.png')
+    plt.savefig(f'{results_path}/discriminator_X_loss.png')
     plt.show()
 
     # Plot for discriminator Y loss
@@ -242,7 +242,7 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.ylabel('Loss')      
     plt.legend()
     plt.title('Discriminator Y loss over Epochs')
-    plt.savefig('../results/discriminator_Y_loss.png')
+    plt.savefig(f'{results_path}/discriminator_Y_loss.png')
     plt.show()
 
 
@@ -372,10 +372,11 @@ def main():
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
-    os.makedirs('../results', exist_ok=True)
+    results_path = '../results'
+    os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
-                      train_discriminator_Y_losses, val_discriminator_Y_losses)
+                      train_discriminator_Y_losses, val_discriminator_Y_losses, results_path)
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
