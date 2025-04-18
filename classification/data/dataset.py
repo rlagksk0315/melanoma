@@ -14,8 +14,8 @@ class MelanomaDataset(Dataset):
 
     def __getitem__(self, idx):
         img_name = os.path.join(self.root_dir, self.dataframe.iloc[idx, 1])
-        image = read_image(img_name)
-        label = self.dataframe.iloc[idx, 2]
+        image = read_image(img_name).float() / 255.0
+        label = self.dataframe.iloc[idx, 2].item()
         if self.transform:
             image = self.transform(image)
         return image, label

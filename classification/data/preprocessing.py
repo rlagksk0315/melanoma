@@ -26,7 +26,6 @@ def split_data(df, group_col='lesion_id', test_size=0.2, val_size=0.125, random_
 def get_transforms():
     return transforms.Compose([
         transforms.Resize((224, 224)),
-        transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
@@ -40,8 +39,8 @@ def get_dataloaders(train_df, val_df, test_df, root_dir, batch_size=32):
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     return train_loader, val_loader, test_loader
 
-def get_class_ratio(df):
+def get_pos_ratio(df):
     num_pos = (df['label'] == 1).sum()
     num_neg = (df['label'] == 0).sum()
-    ratio = num_neg/num_pos
-    return ratio
+    pos_ratio = num_neg/num_pos
+    return pos_ratio
