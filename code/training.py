@@ -17,7 +17,7 @@ import itertools
 batch_size = 1
 num_workers = 4
 seed = 42
-epochs = 1
+epochs = 30
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # macbook
