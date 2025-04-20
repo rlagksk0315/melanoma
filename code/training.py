@@ -27,11 +27,16 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Load dataset
 ddi_data_dir = "../data/ddi_cropped"
 ham_data_dir = "../data/HAM10000"
-ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_val, ham_loader_test = get_dataloaders(ddi_data_dir,
-                                                                                                                        ham_data_dir,
+scin_data_dir = "../data/scin_data"
+ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_val, ham_loader_test, scin_loader_train, scin_loader_val, scin_loader_test = get_dataloaders(ddi_data_dir,
+                                                                                                                        ham_data_dir, scin_data_dir,
                                                                                                                         batch_size=batch_size,
                                                                                                                         num_workers=num_workers,
                                                                                                                         seed=seed)
+darkskin_train_dataset = torch.utils.data.ConcatDataset([ddi_loader_train.dataset, scin_loader_train.dataset])
+darkskin_val_dataset = torch.utils.data.ConcatDataset([ddi_loader_val.dataset, scin_loader_val.dataset])
+darkinskin_test_dataset = torch.utils.data.ConcatDataset([ddi_loader_test.dataset, scin_loader_test.dataset])
+
 
 '''
 combined_train_dataset = torch.utils.data.ConcatDataset([ham_loader_train.dataset, ddi_loader_train.dataset])
@@ -74,10 +79,10 @@ def train_cyclegan(ham_loader_train, ddi_loader_train, generate_XtoY, generate_Y
     total_generator_loss, total_discriminator_X_loss, total_discriminator_Y_loss = torch.tensor(0.0, device=device), torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
     n = 0 # batch
 
-    loop = tqdm(zip(ham_loader_train, ddi_loader_train), total=min(len(ham_loader_train), len(ddi_loader_train)))
-    for ham_batch, ddi_batch in loop:
+    loop = tqdm(zip(ham_loader_train, darkskin_train_dataset), total=min(len(ham_loader_train), len(darkskin_train_dataset)))
+    for ham_batch, darkskin_train_dataset in loop:
         real_X = ham_batch.float().to(device) # reference HAM
-        real_Y = ddi_batch.float().to(device) # reference DDI
+        real_Y = darkskin_train_dataset.float().to(device) # reference darkskin images
         n += 1
         
         # ==========================GENERATOR==========================
@@ -144,7 +149,7 @@ def train_cyclegan(ham_loader_train, ddi_loader_train, generate_XtoY, generate_Y
     return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
 
 #validation
-def validate_cyclegan(ham_loader_val, ddi_loader_val, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device, epoch, image_path):
+def validate_cyclegan(ham_loader_val, darkskin_val_dataset, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device, epoch, image_path):
     generate_XtoY.eval()
     generate_YtoX.eval()
     Discriminator_X.eval()
@@ -154,10 +159,10 @@ def validate_cyclegan(ham_loader_val, ddi_loader_val, generate_XtoY, generate_Yt
     n = 0
 
     with torch.no_grad():
-        loop = tqdm(zip(ham_loader_val, ddi_loader_val), total=min(len(ham_loader_val), len(ddi_loader_val)))
-        for ham_batch, ddi_batch in loop:
+        loop = tqdm(zip(ham_loader_val, darkskin_val_dataset), total=min(len(ham_loader_val), len(darkskin_val_dataset)))
+        for ham_batch, darkskin_batch in loop:
             real_X = ham_batch.float().to(device)
-            real_Y = ddi_batch.float().to(device)
+            real_Y = darkskin_batch.float().to(device)  # reference darkskin images
             n += 1
 
             # ==========================GENERATOR==========================

@@ -83,6 +83,45 @@ class HAMDataset(Dataset):
         #return img, malignant
         return img
     
+class SCINDataset(Dataset): #NEW DATASET
+    def __init__(self, data_dir, csv_file, transform=None, monk_range=(7, 10), file_list=None):
+        """
+        Args:
+            data_dir (str): Path to SCIN image folder.
+            csv_file (str): Path to SCIN metadata CSV file.
+            transform (callable, optional): Image transformations.
+            monk_range (tuple): Tuple of (min_monk, max_monk) to filter based on Monk Skin Tone scale.
+            file_list (list[str], optional): List of filenames to include.
+        """
+        self.data_dir = data_dir
+        self.transform = transform
+
+        df = pd.read_csv(csv_file)
+        
+        df["monk_skin_tone_label_us"] = pd.to_numeric(df["monk_skin_tone_label_us"], errors='coerce')
+        
+        # Filter based on Monk Skin Tone scale
+        df = df[df["monk_skin_tone_label_us"].between(monk_range[0], monk_range[1])]
+        
+        if file_list is not None:
+            df = df[df["filename"].isin(file_list)]
+
+        df = df.reset_index(drop=True)
+        self.df = df
+
+    def __len__(self):
+        return len(self.df)
+
+    def __getitem__(self, idx):
+        row = self.df.iloc[idx]
+        img_path = os.path.join(self.data_dir, row["filename"])
+        img = Image.open(img_path).convert("RGB")
+        if self.transform:
+            img = self.transform(img)
+
+        return img
+
+    
 # data splitting
 # train: 60%, val: 20%, test: 20%
 def split_data(data_dir, train_ratio=0.6, val_ratio=0.2):
@@ -107,6 +146,10 @@ def load_data_ham(data_dir, csv_file, file_list, transform, batch_size):
     ds = HAMDataset(data_dir, csv_file, transform=transform, file_list=file_list)
     return DataLoader(ds, batch_size=batch_size, shuffle=True)
 
+def load_data_scin(data_dir, csv_file, file_list, transform, batch_size, monk_range=(7, 10)):
+    ds = SCINDataset(data_dir, csv_file, transform=transform, monk_range=monk_range, file_list=file_list)
+    return DataLoader(ds, batch_size=batch_size, shuffle=True)
+
 def display_image(image_tensor):
     # display tensor image
     image = transforms.ToPILImage()(image_tensor)
@@ -114,7 +157,7 @@ def display_image(image_tensor):
     plt.axis('off')
     plt.show()
 
-def get_dataloaders(ddi_data_dir, ham_data_dir, batch_size=32, num_workers=4, seed=42):
+def get_dataloaders(ddi_data_dir, ham_data_dir, scin_data_dir, batch_size=32, num_workers=4, seed=42): #ADD IN SCIN DATASET
     # define transformations
     train_transform = transforms.Compose([
         transforms.Resize((224,224)),
@@ -133,12 +176,15 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, batch_size=32, num_workers=4, se
 
     ddi_label_file = os.path.join(ddi_data_dir, "ddi_metadata.csv")
     ham_label_file = os.path.join(ham_data_dir, "HAM10000_metadata.csv")
+    scin_label_file = os.path.join(scin_data_dir, "SCIN_metadata.csv")
     
     # split the data into train, val, and test sets
     ddi_image_dir = os.path.join(ddi_data_dir, "images")
     ham_image_dir = os.path.join(ham_data_dir, "images")
+    scin_image_dir = os.path.join(scin_data_dir, "images")
     train_files_ddi, val_files_ddi, test_files_ddi = split_data(ddi_image_dir)
     train_files_ham, val_files_ham, test_files_ham = split_data(ham_image_dir)
+    train_files_scin, val_files_scin, test_files_scin = split_data(scin_image_dir)
 
     # create data loaders
     ddi_loader_train, ddi_loader_val, ddi_loader_test = [
@@ -171,14 +217,29 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, batch_size=32, num_workers=4, se
         ]
     ]
 
-    return ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_val, ham_loader_test
+    scin_loader_train, scin_loader_val, scin_loader_test = [
+        load_data_scin(
+            scin_image_dir,
+            scin_label_file,
+            files,
+            transform,
+            batch_size
+        )
+        for files, transform in [
+            (train_files_scin, train_transform),
+            (val_files_scin,   eval_transform),
+            (test_files_scin,  eval_transform),
+        ]
+    ]
+
+    return ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_val, ham_loader_test, scin_loader_train, scin_loader_val, scin_loader_test
 
 # ================================================================================
 # main function to load data
 # ================================================================================
 
 if __name__ == "__main__":
-    ddi_train_loader, ddi_val_loader, ddi_test_loader, ham_train_loader, ham_val_loader, ham_test_loader = get_dataloaders(ddi_data_dir, ham_data_dir, batch_size)
+    ddi_train_loader, ddi_val_loader, ddi_test_loader, ham_train_loader, ham_val_loader, ham_test_loader, scin_train_loader, scin_val_loader, scin_test_loader = get_dataloaders(ddi_data_dir, ham_data_dir, scin_data_dir, batch_size)
     print('Data loading complete!')
 
     '''
