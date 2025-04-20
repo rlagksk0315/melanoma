@@ -33,6 +33,8 @@ ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_
                                                                                                                         batch_size=batch_size,
                                                                                                                         num_workers=num_workers,
                                                                                                                         seed=seed)
+
+#I combined the dataset for ddi & scin together as a darkskin_dataset 
 darkskin_train_dataset = torch.utils.data.ConcatDataset([ddi_loader_train.dataset, scin_loader_train.dataset])
 darkskin_val_dataset = torch.utils.data.ConcatDataset([ddi_loader_val.dataset, scin_loader_val.dataset])
 darkinskin_test_dataset = torch.utils.data.ConcatDataset([ddi_loader_test.dataset, scin_loader_test.dataset])

@@ -83,7 +83,7 @@ class HAMDataset(Dataset):
         #return img, malignant
         return img
     
-class SCINDataset(Dataset): #NEW DATASET
+class SCINDataset(Dataset): #SCIN dataset --> filtered such that only darkskin images (monkscale USA 7-10) are included
     def __init__(self, data_dir, csv_file, transform=None, monk_range=(7, 10), file_list=None):
         """
         Args:
