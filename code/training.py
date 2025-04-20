@@ -317,7 +317,7 @@ def main():
                 device = device
             )
 
-            validation_img_path = '../generated_images/validation' # path to save validation generated images
+            validation_img_path = '../generated_images/hana/validation' # path to save validation generated images
             os.makedirs(validation_img_path, exist_ok=True)
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
@@ -372,7 +372,7 @@ def main():
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
-    results_path = '../results'
+    results_path = '../results/hana'
     os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
