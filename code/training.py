@@ -17,7 +17,7 @@ import itertools
 batch_size = 1
 num_workers = 4
 seed = 42
-epochs = 100
+epochs = 10
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # macbook
@@ -27,7 +27,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # Load dataset
 ddi_data_dir = "../data/ddi_cropped"
 ham_data_dir = "../data/HAM10000"
-scin_data_dir = "../data/scin_data"
+scin_data_dir = "../data/dark_scin"
 ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_val, ham_loader_test, scin_loader_train, scin_loader_val, scin_loader_test = get_dataloaders(ddi_data_dir,
                                                                                                                         ham_data_dir, scin_data_dir,
                                                                                                                         batch_size=batch_size,
@@ -35,9 +35,9 @@ ddi_loader_train, ddi_loader_val, ddi_loader_test, ham_loader_train, ham_loader_
                                                                                                                         seed=seed)
 
 #I combined the dataset for ddi & scin together as a darkskin_dataset 
-darkskin_train_dataset = torch.utils.data.ConcatDataset([ddi_loader_train.dataset, scin_loader_train.dataset])
-darkskin_val_dataset = torch.utils.data.ConcatDataset([ddi_loader_val.dataset, scin_loader_val.dataset])
-darkinskin_test_dataset = torch.utils.data.ConcatDataset([ddi_loader_test.dataset, scin_loader_test.dataset])
+darkskin_loader_train = torch.utils.data.ConcatDataset([ddi_loader_train.dataset, scin_loader_train.dataset])
+darkskin_loader_val = torch.utils.data.ConcatDataset([ddi_loader_val.dataset, scin_loader_val.dataset])
+darkskin_loader_test = torch.utils.data.ConcatDataset([ddi_loader_test.dataset, scin_loader_test.dataset])
 
 
 '''
@@ -71,7 +71,7 @@ optimizer_discriminator_X = optim.Adam(Discriminator_X.parameters(), lr=learning
 optimizer_discriminator_Y = optim.Adam(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 
 # Training
-def train_cyclegan(ham_loader_train, ddi_loader_train, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
+def train_cyclegan(ham_loader_train, darkskin_train_dataset, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
     # model.train() # Model in training mode
     generate_XtoY.train()
     generate_YtoX.train()
@@ -316,7 +316,7 @@ def main():
             
             train_generator_loss, train_discriminator_X_loss, train_discriminator_Y_loss = train_cyclegan(
                 ham_loader_train = ham_loader_train,
-                ddi_loader_train = ddi_loader_train,
+                darkskin_train_dataset = darkskin_train_dataset,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
@@ -329,7 +329,7 @@ def main():
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
                 ham_loader_val = ham_loader_val,
-                ddi_loader_val = ddi_loader_val,
+                darkskin_val_dataset = darkskin_val_dataset,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,

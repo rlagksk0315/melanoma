@@ -205,6 +205,7 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, scin_data_dir, batch_size=32, nu
     scin_loader_train, scin_loader_val, scin_loader_test = [
         load_data_scin(
             scin_image_dir,
+            files,
             transform,
             batch_size
         )
