@@ -84,38 +84,24 @@ class HAMDataset(Dataset):
         return img
     
 class SCINDataset(Dataset): #SCIN dataset --> filtered such that only darkskin images (monkscale USA 7-10) are included
-    def __init__(self, data_dir, csv_file, transform=None, monk_range=(7, 10), file_list=None):
+    def __init__(self, data_dir, transform=None, file_list=None):
         """
         Args:
             data_dir (str): Path to SCIN image folder.
-            csv_file (str): Path to SCIN metadata CSV file.
             transform (callable, optional): Image transformations.
-            monk_range (tuple): Tuple of (min_monk, max_monk) to filter based on Monk Skin Tone scale.
-            file_list (list[str], optional): List of filenames to include.
         """
         self.data_dir = data_dir
         self.transform = transform
-
-        df = pd.read_csv(csv_file)
-        
-        df["monk_skin_tone_label_us"] = pd.to_numeric(df["monk_skin_tone_label_us"], errors='coerce')
-        
-        # Filter based on Monk Skin Tone scale
-        df = df[df["monk_skin_tone_label_us"].between(monk_range[0], monk_range[1])]
-        
-        if file_list is not None:
-            df = df[df["filename"].isin(file_list)]
-
-        df = df.reset_index(drop=True)
-        self.df = df
+        self.file_list = file_list if file_list is not None else os.listdir(data_dir)
 
     def __len__(self):
-        return len(self.df)
+        return len(self.file_list)
 
     def __getitem__(self, idx):
-        row = self.df.iloc[idx]
-        img_path = os.path.join(self.data_dir, row["filename"])
+        img_name = self.file_list[idx]
+        img_path = os.path.join(self.data_dir, img_name)
         img = Image.open(img_path).convert("RGB")
+
         if self.transform:
             img = self.transform(img)
 
@@ -146,8 +132,8 @@ def load_data_ham(data_dir, csv_file, file_list, transform, batch_size):
     ds = HAMDataset(data_dir, csv_file, transform=transform, file_list=file_list)
     return DataLoader(ds, batch_size=batch_size, shuffle=True)
 
-def load_data_scin(data_dir, csv_file, file_list, transform, batch_size, monk_range=(7, 10)):
-    ds = SCINDataset(data_dir, csv_file, transform=transform, monk_range=monk_range, file_list=file_list)
+def load_data_scin(data_dir, file_list, transform, batch_size):
+    ds = SCINDataset(data_dir, transform=transform, file_list=file_list)
     return DataLoader(ds, batch_size=batch_size, shuffle=True)
 
 def display_image(image_tensor):
@@ -176,7 +162,6 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, scin_data_dir, batch_size=32, nu
 
     ddi_label_file = os.path.join(ddi_data_dir, "ddi_metadata.csv")
     ham_label_file = os.path.join(ham_data_dir, "HAM10000_metadata.csv")
-    scin_label_file = os.path.join(scin_data_dir, "SCIN_metadata.csv")
     
     # split the data into train, val, and test sets
     ddi_image_dir = os.path.join(ddi_data_dir, "images")
@@ -220,8 +205,6 @@ def get_dataloaders(ddi_data_dir, ham_data_dir, scin_data_dir, batch_size=32, nu
     scin_loader_train, scin_loader_val, scin_loader_test = [
         load_data_scin(
             scin_image_dir,
-            scin_label_file,
-            files,
             transform,
             batch_size
         )
