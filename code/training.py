@@ -138,7 +138,7 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
 
         # total generator loss
         loss_generator = (
-            loss_G_XtoY + loss_G_YtoX + 10 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
+            loss_G_XtoY + loss_G_YtoX + 7 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
         )
 
         loss_generator.backward()
