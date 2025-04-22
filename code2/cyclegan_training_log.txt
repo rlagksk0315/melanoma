@@ -1,0 +1,4 @@
+Epoch, Train Generator Loss, Val Generator Loss, Train Discriminator X Loss, Val Discriminator X Loss, Train Discriminator Y Loss, Val Discriminator Y Loss
+1, 23.6046, 18.9331,0.5883, 0.5194,0.6189, 0.5963
+2, 21.5044, 18.3798,0.4697, 0.5237,0.5502, 0.6063
+3, 20.6817, 17.4236,0.4707, 0.4737,0.5572, 0.5633
