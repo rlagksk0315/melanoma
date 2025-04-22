@@ -2,7 +2,6 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 import argparse
 from data_loading import get_dataloaders
@@ -10,7 +9,6 @@ import multiprocessing
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from torchvision import transforms
 from cyclegan import Generator, Discriminator, generator_adversarial_loss, discriminator_adversarial_loss, cycle_loss, identity_loss
 import itertools
 
@@ -20,6 +18,8 @@ parser.add_argument('--gen_images_path', type=str, default='../generated_images'
 parser.add_argument('--results_path', type=str, default='../results')
 parser.add_argument('--num_epochs', type=int, default=100)
 parser.add_argument('--learning_rate', type=float, default=0.0002)
+parser.add_argument('--use_lr_decay', action='store_true', help='Apply learning rate decay')
+
 
 args = parser.parse_args()
 
@@ -78,6 +78,20 @@ optimizer_for_generators = optim.Adam(
 )
 optimizer_discriminator_X = optim.Adam(Discriminator_X.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 optimizer_discriminator_Y = optim.Adam(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+
+# learning rate decay
+if args.use_lr_decay:
+    def lambda_rule(epoch):
+        if epoch < 100:
+            return 1.0
+        else:
+            return 1.0 - (epoch - 100) / float(epochs - 100 + 1)
+
+    scheduler_G = optim.lr_scheduler.LambdaLR(optimizer_for_generators, lr_lambda=lambda_rule)
+    scheduler_D_X = optim.lr_scheduler.LambdaLR(optimizer_discriminator_X, lr_lambda=lambda_rule)
+    scheduler_D_Y = optim.lr_scheduler.LambdaLR(optimizer_discriminator_Y, lr_lambda=lambda_rule)
+
+
 
 # Training
 def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
@@ -377,6 +391,17 @@ def main():
                    'Discriminator_X': Discriminator_X.state_dict(),
                    'Discriminator_Y': Discriminator_Y.state_dict(),
                 }
+
+            # learning rate decay
+            if args.use_lr_decay:
+                scheduler_G.step()
+                scheduler_D_X.step()
+                scheduler_D_Y.step()
+
+            if args.use_lr_decay:
+                current_lr = scheduler_G.get_last_lr()[0]
+                print(f"Current Learning Rate: {current_lr:.6f}")
+
 
     if best_model_state is not None:
         torch.save(best_model_state, f'{args.results_path}/best_cyclegan_model.pth')

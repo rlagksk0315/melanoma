@@ -3,4 +3,8 @@
 export gen_images_path='../generated_images/hana_scin'
 export results_path='../results/hana_scin'
 
-python training.py --gen_images_path "$gen_images_path" --results_path "$results_path" --num_epochs 100 --learning_rate 0.0002
+python training.py --gen_images_path "$gen_images_path" \
+                --results_path "$results_path" \
+                --num_epochs 100 \
+                --learning_rate 0.0002 \
+                --use_lr_decay # get rid of this flag if you don't want to apply learning rate decay
