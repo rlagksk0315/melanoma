@@ -85,6 +85,8 @@ def train_cyclegan(ham_loader_train, darkskin_train_dataset, generate_XtoY, gene
     for ham_batch, darkskin_train_dataset in loop:
         real_X = ham_batch.float().to(device) # reference HAM
         real_Y = darkskin_train_dataset.float().to(device) # reference darkskin images
+        # add batch dimension to real_Y
+        real_Y = real_Y.unsqueeze(0)
         n += 1
         
         # ==========================GENERATOR==========================
@@ -165,6 +167,9 @@ def validate_cyclegan(ham_loader_val, darkskin_val_dataset, generate_XtoY, gener
         for ham_batch, darkskin_batch in loop:
             real_X = ham_batch.float().to(device)
             real_Y = darkskin_batch.float().to(device)  # reference darkskin images
+            # add batch dimension to real_Y
+            real_Y = real_Y.unsqueeze(0)
+            
             n += 1
 
             # ==========================GENERATOR==========================
@@ -316,7 +321,7 @@ def main():
             
             train_generator_loss, train_discriminator_X_loss, train_discriminator_Y_loss = train_cyclegan(
                 ham_loader_train = ham_loader_train,
-                darkskin_train_dataset = darkskin_train_dataset,
+                darkskin_train_dataset = darkskin_loader_train,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
@@ -324,12 +329,12 @@ def main():
                 device = device
             )
 
-            validation_img_path = '../generated_images/hana/validation' # path to save validation generated images
+            validation_img_path = '../generated_images/hana_scin/validation' # path to save validation generated images
             os.makedirs(validation_img_path, exist_ok=True)
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
                 ham_loader_val = ham_loader_val,
-                darkskin_val_dataset = darkskin_val_dataset,
+                darkskin_val_dataset = darkskin_loader_val,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
@@ -379,7 +384,7 @@ def main():
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
-    results_path = '../results/hana'
+    results_path = '../results/hana_scin'
     os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
