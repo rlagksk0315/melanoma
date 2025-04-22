@@ -28,7 +28,7 @@ class Generator(nn.Module):
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=4, stride=stride, padding=1),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.BatchNorm2d(out_channels)
+            nn.InstanceNorm2d(out_channels)
         )
     
     def upconv_block(self, in_channels, out_channels, final_layer=False):
@@ -41,7 +41,7 @@ class Generator(nn.Module):
             return nn.Sequential(
                 nn.ConvTranspose2d(in_channels, out_channels, kernel_size=4, stride=2, padding=1),
                 nn.ReLU(inplace=True),
-                nn.BatchNorm2d(out_channels)
+                nn.InstanceNorm2d(out_channels)
             )
     
     def forward(self, x):

@@ -2,27 +2,36 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 from tqdm import tqdm
+import argparse
 from data_loading import get_dataloaders
 import multiprocessing
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from torchvision import transforms
 from cyclegan import Generator, Discriminator, generator_adversarial_loss, discriminator_adversarial_loss, cycle_loss, identity_loss
 import itertools
+
+# Argparse Details
+parser = argparse.ArgumentParser(description='CycleGAN Training Script')
+parser.add_argument('--gen_images_path', type=str, default='../generated_images')
+parser.add_argument('--results_path', type=str, default='../results')
+parser.add_argument('--num_epochs', type=int, default=100)
+parser.add_argument('--learning_rate', type=float, default=0.0002)
+parser.add_argument('--use_lr_decay', action='store_true', help='Apply learning rate decay')
+
+
+args = parser.parse_args()
+
+# Override hyperparameters
+epochs = args.num_epochs
+learning_rate = args.learning_rate
 
 # Hyperparameters
 batch_size = 1
 num_workers = 4
 seed = 42
-epochs = 150
-learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# macbook
-# device = torch.device
-# version = 'v1'
 
 # Load dataset
 ddi_data_dir = "../data/ddi_cropped"
@@ -69,6 +78,20 @@ optimizer_for_generators = optim.Adam(
 )
 optimizer_discriminator_X = optim.Adam(Discriminator_X.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 optimizer_discriminator_Y = optim.Adam(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+
+# learning rate decay
+if args.use_lr_decay:
+    def lambda_rule(epoch):
+        if epoch < 100:
+            return 1.0
+        else:
+            return 1.0 - (epoch - 100) / float(epochs - 100 + 1)
+
+    scheduler_G = optim.lr_scheduler.LambdaLR(optimizer_for_generators, lr_lambda=lambda_rule)
+    scheduler_D_X = optim.lr_scheduler.LambdaLR(optimizer_discriminator_X, lr_lambda=lambda_rule)
+    scheduler_D_Y = optim.lr_scheduler.LambdaLR(optimizer_discriminator_Y, lr_lambda=lambda_rule)
+
+
 
 # Training
 def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
@@ -309,7 +332,10 @@ def main():
     train_discriminator_X_losses, val_discriminator_X_losses = [], []
     train_discriminator_Y_losses, val_discriminator_Y_losses = [], []
 
-    with open("cyclegan_training_log.txt", "w") as f:
+    # logging
+    os.makedirs(args.results_path, exist_ok=True)
+
+    with open(f"{args.results_path}/cyclegan_training_log.txt", "w") as f:
         f.write("Epoch, Train Generator Loss, Val Generator Loss, Train Discriminator X Loss, Val Discriminator X Loss, Train Discriminator Y Loss, Val Discriminator Y Loss\n")
 
         # Main training loop
@@ -326,7 +352,7 @@ def main():
                 device = device
             )
 
-            validation_img_path = '../generated_images/justin/validation' # path to save validation generated images
+            validation_img_path = f'{args.gen_images_path}' # path to save validation generated images
             os.makedirs(validation_img_path, exist_ok=True)
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
@@ -368,10 +394,22 @@ def main():
                    'Discriminator_X': Discriminator_X.state_dict(),
                    'Discriminator_Y': Discriminator_Y.state_dict(),
                 }
+                print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
+
+            # learning rate decay
+            if args.use_lr_decay:
+                scheduler_G.step()
+                scheduler_D_X.step()
+                scheduler_D_Y.step()
+
+            if args.use_lr_decay:
+                current_lr = scheduler_G.get_last_lr()[0]
+                print(f"Current Learning Rate: {current_lr:.6f}")
+
 
     if best_model_state is not None:
-        torch.save(best_model_state, '../results/justin/best_cyclegan_model.pth')
-        print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
+        torch.save(best_model_state, f'{args.results_path}/best_cyclegan_model.pth')
+        print(f"====Final best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}====")
 
     train_generator_losses = torch.tensor(train_generator_losses)
     val_generator_losses = torch.tensor(val_generator_losses)
@@ -381,7 +419,7 @@ def main():
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
-    results_path = '../results/justin'
+    results_path = results_path = f'{args.results_path}'
     os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
