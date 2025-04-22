@@ -333,7 +333,7 @@ def main():
     train_discriminator_Y_losses, val_discriminator_Y_losses = [], []
 
     # logging
-    os.makedirs(f"{args.results_path}/cyclegan_training_log.txt", exist_ok=True)
+    os.makedirs(args.results_path, exist_ok=True)
 
     with open(f"{args.results_path}/cyclegan_training_log.txt", "w") as f:
         f.write("Epoch, Train Generator Loss, Val Generator Loss, Train Discriminator X Loss, Val Discriminator X Loss, Train Discriminator Y Loss, Val Discriminator Y Loss\n")
