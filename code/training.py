@@ -394,6 +394,7 @@ def main():
                    'Discriminator_X': Discriminator_X.state_dict(),
                    'Discriminator_Y': Discriminator_Y.state_dict(),
                 }
+                print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
             # learning rate decay
             if args.use_lr_decay:
@@ -408,7 +409,7 @@ def main():
 
     if best_model_state is not None:
         torch.save(best_model_state, f'{args.results_path}/best_cyclegan_model.pth')
-        print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
+        print(f"====Final best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}====")
 
     train_generator_losses = torch.tensor(train_generator_losses)
     val_generator_losses = torch.tensor(val_generator_losses)
