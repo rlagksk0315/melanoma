@@ -213,7 +213,7 @@ def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, genera
     average_discriminator_Y_loss = total_discriminator_Y_loss / n
 
     # Display images
-    display_images(image_path, real_X, fake_X, epoch)
+    display_images(image_path, real_X, fake_Y, epoch)
 
     return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
 
@@ -256,44 +256,44 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
 
 
 # display images
-def display_images(image_path, real_X, fake_X, epoch, num_images=1):
+def display_images(image_path, real_X, fake_Y, epoch, num_images=1):
     """
     Displays real and generated images for reference and comparison.
     """
 
     # Convert tensors to numpy arrays for displaying with matplotlib
     real_X = real_X.cpu().detach() # HAM
-    fake_X = fake_X.cpu().detach() # dark skinned HAM
+    fake_Y = fake_Y.cpu().detach() # dark skinned HAM
 
     # squeeze the batch dimension
     real_X = np.squeeze(real_X, axis=0)
-    fake_X = np.squeeze(fake_X, axis=0)
+    fake_Y = np.squeeze(fake_Y, axis=0)
 
     # Denormalize the images (reverse the normalization)
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     
     real_X = real_X * std[:, None, None] + mean[:, None, None]
-    fake_X = fake_X * std[:, None, None] + mean[:, None, None]
+    fake_Y = fake_Y * std[:, None, None] + mean[:, None, None]
     
     # Rescale from [-1, 1] to [0, 1]
     real_X = np.clip(real_X, 0, 1)
-    fake_X = np.clip(fake_X, 0, 1)
+    fake_Y = np.clip(fake_Y, 0, 1)
     
     # Transpose the image from (C, H, W) to (H, W, C) for visualization
     real_X = np.transpose(real_X, (1, 2, 0))
-    fake_X = np.transpose(fake_X, (1, 2, 0))
+    fake_Y = np.transpose(fake_Y, (1, 2, 0))
     
     fig, axes = plt.subplots(1, 2, figsize=(8, 4))
 
     # Display real images
     axes[0].imshow(real_X)
-    axes[0].set_title(f"Real X")
+    axes[0].set_title(f"Light HAM")
     axes[0].axis('off')
 
     # Display generated images
-    axes[1].imshow(fake_X)
-    axes[1].set_title(f"Fake X")
+    axes[1].imshow(fake_Y)
+    axes[1].set_title(f"Generated Dark HAM")
     axes[1].axis('off')
         
     plt.savefig(f'{image_path}/epoch{epoch+1}_real_vs_fake.png')
@@ -370,7 +370,7 @@ def main():
                 }
 
     if best_model_state is not None:
-        torch.save(best_model_state, '../results/best_cyclegan_model.pth')
+        torch.save(best_model_state, '../results/isalis/best_cyclegan_model.pth')
         print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
     train_generator_losses = torch.tensor(train_generator_losses)
