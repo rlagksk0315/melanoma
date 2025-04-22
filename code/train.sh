@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export gen_images_path='../generated_images/lr_0.0002_decay_True_epochs_200'
-export results_path='../results/lr_0.0002_decay_True_epochs_200'
+export gen_images_path='../generated_images/justin_lrdecay'
+export results_path='../results/justin_lrdecay'
 
 python training.py --gen_images_path "$gen_images_path" \
                 --results_path "$results_path" \
