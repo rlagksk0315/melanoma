@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import argparse
 from data_loading import get_dataloaders
 import multiprocessing
 import matplotlib.pyplot as plt
@@ -12,6 +13,19 @@ import numpy as np
 from torchvision import transforms
 from cyclegan import Generator, Discriminator, generator_adversarial_loss, discriminator_adversarial_loss, cycle_loss, identity_loss
 import itertools
+
+# Argparse Details
+parser = argparse.ArgumentParser(description='CycleGAN Training Script')
+parser.add_argument('--gen_images_path', type=str, default='../generated_images')
+parser.add_argument('--results_path', type=str, default='../results')
+parser.add_argument('--num_epochs', type=int, default=100)
+parser.add_argument('--learning_rate', type=float, default=0.0002)
+
+args = parser.parse_args()
+
+# Override hyperparameters
+epochs = args.num_epochs
+learning_rate = args.learning_rate
 
 # Hyperparameters
 batch_size = 1
@@ -309,7 +323,7 @@ def main():
     train_discriminator_X_losses, val_discriminator_X_losses = [], []
     train_discriminator_Y_losses, val_discriminator_Y_losses = [], []
 
-    with open("cyclegan_training_log.txt", "w") as f:
+    with open(f"{args.results_path}/cyclegan_training_log.txt", "w") as f:
         f.write("Epoch, Train Generator Loss, Val Generator Loss, Train Discriminator X Loss, Val Discriminator X Loss, Train Discriminator Y Loss, Val Discriminator Y Loss\n")
 
         # Main training loop
@@ -326,7 +340,7 @@ def main():
                 device = device
             )
 
-            validation_img_path = '../generated_images/isalis/validation' # path to save validation generated images
+            validation_img_path = f'{args.gen_images_path}' # path to save validation generated images
             os.makedirs(validation_img_path, exist_ok=True)
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
@@ -370,7 +384,7 @@ def main():
                 }
 
     if best_model_state is not None:
-        torch.save(best_model_state, '../results/isalis/best_cyclegan_model.pth')
+        torch.save(best_model_state, f'{args.results_path}/best_cyclegan_model.pth')
         print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
     train_generator_losses = torch.tensor(train_generator_losses)
@@ -381,7 +395,7 @@ def main():
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
-    results_path = '../results/isalis'
+    results_path = results_path = f'{args.results_path}'
     os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,

@@ -1,1 +1,0 @@
-Epoch, Train Generator Loss, Val Generator Loss, Train Discriminator X Loss, Val Discriminator X Loss, Train Discriminator Y Loss, Val Discriminator Y Loss
