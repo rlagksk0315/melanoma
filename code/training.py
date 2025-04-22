@@ -17,7 +17,7 @@ import itertools
 batch_size = 1
 num_workers = 4
 seed = 42
-epochs = 10
+epochs = 150
 learning_rate = 0.0002
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # macbook
@@ -115,7 +115,7 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
 
         # total generator loss
         loss_generator = (
-            loss_G_XtoY + loss_G_YtoX + 10 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
+            loss_G_XtoY + loss_G_YtoX + 7 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
         )
 
         loss_generator.backward()
@@ -326,7 +326,7 @@ def main():
                 device = device
             )
 
-            validation_img_path = '../generated_images/isalis/validation' # path to save validation generated images
+            validation_img_path = '../generated_images/justin/validation' # path to save validation generated images
             os.makedirs(validation_img_path, exist_ok=True)
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
@@ -370,7 +370,7 @@ def main():
                 }
 
     if best_model_state is not None:
-        torch.save(best_model_state, '../results/isalis/best_cyclegan_model.pth')
+        torch.save(best_model_state, '../results/justin/best_cyclegan_model.pth')
         print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
     train_generator_losses = torch.tensor(train_generator_losses)
@@ -381,7 +381,7 @@ def main():
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
-    results_path = '../results/isalis'
+    results_path = '../results/justin'
     os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
