@@ -152,7 +152,7 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
     return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
 
 #validation
-def validate_cyclegan(ham_loader_val, darkskin_val_dataset, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device, epoch, image_path):
+def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device, epoch, image_path):
     generate_XtoY.eval()
     generate_YtoX.eval()
     Discriminator_X.eval()
@@ -162,10 +162,11 @@ def validate_cyclegan(ham_loader_val, darkskin_val_dataset, generate_XtoY, gener
     n = 0
 
     with torch.no_grad():
-        loop = tqdm(zip(ham_loader_val, darkskin_val_dataset), total=min(len(ham_loader_val), len(darkskin_val_dataset)))
+        loop = tqdm(zip(ham_loader_val, darkskin_loader_val), total=min(len(ham_loader_val), len(darkskin_loader_val)))
         for ham_batch, darkskin_batch in loop:
             real_X = ham_batch.float().to(device)
             real_Y = darkskin_batch.float().to(device)  # reference darkskin images
+            real_Y = real_Y.unsqueeze(0)
             n += 1
 
             # ==========================GENERATOR==========================
@@ -330,7 +331,7 @@ def main():
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
                 ham_loader_val = ham_loader_val,
-                darkskin_val_dataset = darkskin_val_dataset,
+                darkskin_loader_val = darkskin_loader_val,
                 generate_XtoY = generate_XtoY,
                 generate_YtoX = generate_YtoX,
                 Discriminator_X = Discriminator_X,
@@ -369,7 +370,7 @@ def main():
                 }
 
     if best_model_state is not None:
-        torch.save(best_model_state, 'best_cyclegan_model.pth')
+        torch.save(best_model_state, '../results/best_cyclegan_model.pth')
         print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
     train_generator_losses = torch.tensor(train_generator_losses)
