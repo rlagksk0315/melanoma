@@ -19,7 +19,12 @@ parser.add_argument('--gen_images_path', type=str, default='../generated_images'
 parser.add_argument('--results_path', type=str, default='../results')
 parser.add_argument('--num_epochs', type=int, default=100)
 parser.add_argument('--learning_rate', type=float, default=0.0002)
-parser.add_argument('--use_lr_decay', action='store_true', help='Apply learning rate decay')
+parser.add_argument('--scheduler', type=str, choices=['lambda', 'cosine', 'none'], default='none',
+                    help='Learning rate scheduler: lambda (linear decay), cosine (CosineAnnealingLR), or none')
+parser.add_argument('--optimizer', type=str, choices=['adam', 'adamw'], default='adam',
+                    help='Choose optimizer: adam or adamw')
+
+
 
 args = parser.parse_args()
 
@@ -78,14 +83,25 @@ generate_YtoX = ResnetGenerator().to(device) #downsampling (decoder)
 Discriminator_X = PatchGANDiscriminator().to(device) #discriminator for X 
 Discriminator_Y = PatchGANDiscriminator().to(device) #discriminator for Y
 
-optimizer_for_generators = optim.Adam(
-    itertools.chain(generate_XtoY.parameters(), generate_YtoX.parameters()), lr=learning_rate, betas=(0.5, 0.999)
-)
-optimizer_discriminator_X = optim.Adam(Discriminator_X.parameters(), lr=learning_rate, betas=(0.5, 0.999))
-optimizer_discriminator_Y = optim.Adam(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+if args.optimizer == 'adam':
+    optimizer_for_generators = optim.Adam(
+        itertools.chain(generate_XtoY.parameters(), generate_YtoX.parameters()), 
+        lr=learning_rate, betas=(0.5, 0.999)
+    )
+    optimizer_discriminator_X = optim.Adam(Discriminator_X.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+    optimizer_discriminator_Y = optim.Adam(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+
+elif args.optimizer == 'adamw':
+    optimizer_for_generators = optim.AdamW(
+        itertools.chain(generate_XtoY.parameters(), generate_YtoX.parameters()), 
+        lr=learning_rate, betas=(0.5, 0.999), weight_decay=1e-4
+    )
+    optimizer_discriminator_X = optim.AdamW(Discriminator_X.parameters(), lr=learning_rate, betas=(0.5, 0.999), weight_decay=1e-4)
+    optimizer_discriminator_Y = optim.AdamW(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999), weight_decay=1e-4)
+
 
 # learning rate decay
-if args.use_lr_decay:
+if args.scheduler == 'lambda':
     def lambda_rule(epoch):
         if epoch < 100:
             return 1.0
@@ -95,6 +111,17 @@ if args.use_lr_decay:
     scheduler_G = optim.lr_scheduler.LambdaLR(optimizer_for_generators, lr_lambda=lambda_rule)
     scheduler_D_X = optim.lr_scheduler.LambdaLR(optimizer_discriminator_X, lr_lambda=lambda_rule)
     scheduler_D_Y = optim.lr_scheduler.LambdaLR(optimizer_discriminator_Y, lr_lambda=lambda_rule)
+
+elif args.scheduler == 'cosine':
+    scheduler_G = optim.lr_scheduler.CosineAnnealingLR(optimizer_for_generators, T_max=epochs)
+    scheduler_D_X = optim.lr_scheduler.CosineAnnealingLR(optimizer_discriminator_X, T_max=epochs)
+    scheduler_D_Y = optim.lr_scheduler.CosineAnnealingLR(optimizer_discriminator_Y, T_max=epochs)
+
+else:
+    scheduler_G = None
+    scheduler_D_X = None
+    scheduler_D_Y = None
+
 
 # image buffers
 fake_X_buffer = ImageBuffer()
@@ -177,10 +204,10 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
         total_discriminator_X_loss += loss_discriminator_X.item()
         total_discriminator_Y_loss += loss_discriminator_Y.item()
 
-        # Average Losses
-        average_generator_loss = total_generator_loss / n
-        average_discriminator_X_loss = total_discriminator_X_loss / n
-        average_discriminator_Y_loss = total_discriminator_Y_loss / n
+    # Average Losses
+    average_generator_loss = total_generator_loss / n
+    average_discriminator_X_loss = total_discriminator_X_loss / n
+    average_discriminator_Y_loss = total_discriminator_Y_loss / n
         
     return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
 
@@ -407,14 +434,14 @@ def main():
                 print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
             # learning rate decay
-            if args.use_lr_decay:
+            if scheduler_G:
                 scheduler_G.step()
                 scheduler_D_X.step()
                 scheduler_D_Y.step()
 
-            if args.use_lr_decay:
                 current_lr = scheduler_G.get_last_lr()[0]
                 print(f"Current Learning Rate: {current_lr:.6f}")
+
 
 
     if best_model_state is not None:
