@@ -12,8 +12,8 @@ def train(model, train_loader, val_loader, pos_ratio, device, epochs=10, lr=1e-3
     model.to(device)
 
     os.makedirs(results_path, exist_ok=True)
-    save_path = os.path.join(results_path, 'model1_best_loss.pth')
-    save_path2 = os.path.join(results_path, 'model1_best_acc.pth')
+    save_path = os.path.join(results_path, 'model_best_loss.pth')
+    save_path2 = os.path.join(results_path, 'model_best_acc.pth')
 
     
     train_losses, train_accs = [], []
