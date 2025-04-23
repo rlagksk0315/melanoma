@@ -110,6 +110,7 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
     Discriminator_Y.train()
 
     total_generator_loss, total_discriminator_X_loss, total_discriminator_Y_loss = torch.tensor(0.0, device=device), torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
+    total_identity_X_loss, total_identity_Y_loss = 0, 0
     n = 0 # batch
 
     loop = tqdm(zip(ham_loader_train, darkskin_loader_train), total=min(len(ham_loader_train), len(darkskin_loader_train)))
@@ -176,13 +177,17 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
         # Accumulate losses
         total_discriminator_X_loss += loss_discriminator_X.item()
         total_discriminator_Y_loss += loss_discriminator_Y.item()
+        total_identity_X_loss += loss_identity_X
+        total_identity_Y_loss += loss_identity_Y
 
-        # Average Losses
-        average_generator_loss = total_generator_loss / n
-        average_discriminator_X_loss = total_discriminator_X_loss / n
-        average_discriminator_Y_loss = total_discriminator_Y_loss / n
+    # Average Losses
+    average_generator_loss = total_generator_loss / n
+    average_discriminator_X_loss = total_discriminator_X_loss / n
+    average_discriminator_Y_loss = total_discriminator_Y_loss / n
+    average_identity_X_loss = total_identity_X_loss / n
+    average_identity_Y_loss = total_identity_Y_loss / n
         
-    return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
+    return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss, average_identity_X_loss, average_identity_Y_loss
 
 #validation
 def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device, epoch, image_path):
@@ -192,6 +197,7 @@ def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, genera
     Discriminator_Y.eval()
 
     total_generator_loss, total_discriminator_X_loss, total_discriminator_Y_loss = torch.tensor(0.0, device=device), torch.tensor(0.0, device=device), torch.tensor(0.0, device=device)
+    total_identity_X_loss, total_identity_Y_loss = 0, 0
     n = 0
 
     with torch.no_grad():
@@ -239,20 +245,27 @@ def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, genera
             total_generator_loss += loss_generator.item()
             total_discriminator_X_loss += loss_discriminator_X.item()
             total_discriminator_Y_loss += loss_discriminator_Y.item()
+            total_identity_X_loss += loss_identity_X
+            total_identity_Y_loss += loss_identity_Y
 
     # Average Losses
     average_generator_loss = total_generator_loss / n
     average_discriminator_X_loss = total_discriminator_X_loss / n
     average_discriminator_Y_loss = total_discriminator_Y_loss / n
+    average_identity_X_loss = total_identity_X_loss / n
+    average_identity_Y_loss = total_identity_Y_loss / n
 
     # Display images
-    display_images(image_path, real_X, fake_Y, epoch)
+    display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch)
 
-    return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss
+    return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss, average_identity_X_loss, average_identity_Y_loss
 
-def visualize_metrics(train_generator_losses, val_generator_losses, 
-                    train_discriminator_X_losses, val_discriminator_X_losses,
-                    train_discriminator_Y_losses, val_discriminator_Y_losses, results_path):
+def visualize_metrics(train_generator_losses, val_generator_losses,
+                      train_discriminator_X_losses, val_discriminator_X_losses,
+                      train_discriminator_Y_losses, val_discriminator_Y_losses,
+                      train_identity_X_losses, val_identity_X_losses,
+                      train_identity_Y_losses, val_identity_Y_losses,
+                      results_path):
 
     # Plot for generator loss
     plt.figure()
@@ -287,9 +300,31 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.savefig(f'{results_path}/discriminator_Y_loss.png')
     plt.show()
 
+    # Plot for identity X loss
+    plt.figure()
+    plt.plot(train_identity_X_losses, label='Train Identity X Loss')
+    plt.plot(val_identity_X_losses, label='Validation Identity X Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')      
+    plt.legend()
+    plt.title('Identity X loss over Epochs')
+    plt.savefig(f'{results_path}/identity_X_loss.png')
+    plt.show()
+
+    # Plot for identity Y loss
+    plt.figure()
+    plt.plot(train_identity_Y_losses, label='Train Identity Y Loss')
+    plt.plot(val_identity_Y_losses, label='Validation Identity Y Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')      
+    plt.legend()
+    plt.title('Identity Y loss over Epochs')
+    plt.savefig(f'{results_path}/identity_Y_loss.png')
+    plt.show()
+
 
 # display images
-def display_images(image_path, real_X, fake_Y, epoch, num_images=1):
+def display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch, num_images=1):
     """
     Displays real and generated images for reference and comparison.
     """
@@ -297,10 +332,14 @@ def display_images(image_path, real_X, fake_Y, epoch, num_images=1):
     # Convert tensors to numpy arrays for displaying with matplotlib
     real_X = real_X.cpu().detach() # HAM
     fake_Y = fake_Y.cpu().detach() # dark skinned HAM
+    cycle_X = cycle_X.cpu().detach()
+    identity_X = identity_X.cpu().detach()
 
     # squeeze the batch dimension
     real_X = np.squeeze(real_X, axis=0)
     fake_Y = np.squeeze(fake_Y, axis=0)
+    cycle_X = np.squeeze(cycle_X, axis=0)
+    identity_X = np.squeeze(identity_X, axis=0)
 
     # Denormalize the images (reverse the normalization)
     mean = np.array([0.485, 0.456, 0.406])
@@ -308,28 +347,44 @@ def display_images(image_path, real_X, fake_Y, epoch, num_images=1):
     
     real_X = real_X * std[:, None, None] + mean[:, None, None]
     fake_Y = fake_Y * std[:, None, None] + mean[:, None, None]
+    cycle_X = cycle_X * std[:, None, None] + mean[:, None, None]
+    identity_X = identity_X * std[:, None, None] + mean[:, None, None]
     
     # Rescale from [-1, 1] to [0, 1]
     real_X = np.clip(real_X, 0, 1)
     fake_Y = np.clip(fake_Y, 0, 1)
+    cycle_X = np.clip(cycle_X, 0, 1)
+    identity_X = np.clip(identity_X, 0, 1)
     
     # Transpose the image from (C, H, W) to (H, W, C) for visualization
     real_X = np.transpose(real_X, (1, 2, 0))
     fake_Y = np.transpose(fake_Y, (1, 2, 0))
+    cycle_X = np.transpose(cycle_X, (1, 2, 0))
+    identity_X = np.transpose(identity_X, (1, 2, 0))
     
-    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+    fig, axes = plt.subplots(1, 4, figsize=(16, 4))
 
     # Display real images
     axes[0].imshow(real_X)
-    axes[0].set_title(f"Light HAM")
+    axes[0].set_title(f"Real X")
     axes[0].axis('off')
 
     # Display generated images
     axes[1].imshow(fake_Y)
-    axes[1].set_title(f"Generated Dark HAM")
+    axes[1].set_title(f"Fake Y")
     axes[1].axis('off')
+
+    # Display cycle images
+    axes[2].imshow(cycle_X)
+    axes[2].set_title(f"Cycle X")
+    axes[2].axis('off')
+
+    # Display identity images
+    axes[3].imshow(identity_X)
+    axes[3].set_title(f"Identity X")
+    axes[3].axis('off')
         
-    plt.savefig(f'{image_path}/epoch{epoch+1}_real_vs_fake.png')
+    plt.savefig(f'{image_path}/epoch{epoch+1}_real_fake_cycle_identity.png')
 
 
 def main():
@@ -341,6 +396,8 @@ def main():
     train_generator_losses, val_generator_losses = [], []
     train_discriminator_X_losses, val_discriminator_X_losses = [], []
     train_discriminator_Y_losses, val_discriminator_Y_losses = [], []
+    train_identity_X_losses, val_identity_X_losses = [], []
+    train_identity_Y_losses, val_identity_Y_losses = [], []
 
     # logging
     os.makedirs(args.results_path, exist_ok=True)
@@ -352,7 +409,9 @@ def main():
         for epoch in range(epochs):
             print(f'Epoch {epoch + 1}/{epochs}')
             
-            train_generator_loss, train_discriminator_X_loss, train_discriminator_Y_loss = train_cyclegan(
+            (train_generator_loss,
+             train_discriminator_X_loss, train_discriminator_Y_loss,
+             train_identity_X_loss, train_identity_Y_loss) = train_cyclegan(
                 ham_loader_train = ham_loader_train,
                 darkskin_loader_train = darkskin_loader_train,
                 generate_XtoY = generate_XtoY,
@@ -365,7 +424,9 @@ def main():
             validation_img_path = f'{args.gen_images_path}' # path to save validation generated images
             os.makedirs(validation_img_path, exist_ok=True)
 
-            validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
+            (validate_generator_loss,
+             validate_discriminator_X_loss, validate_discriminator_Y_loss,
+             validate_identity_X_loss, validate_identity_Y_loss) = validate_cyclegan(
                 ham_loader_val = ham_loader_val,
                 darkskin_loader_val = darkskin_loader_val,
                 generate_XtoY = generate_XtoY,
@@ -384,15 +445,23 @@ def main():
             val_discriminator_X_losses.append(validate_discriminator_X_loss)
             train_discriminator_Y_losses.append(train_discriminator_Y_loss)
             val_discriminator_Y_losses.append(validate_discriminator_Y_loss)
+            train_identity_X_losses.append(train_identity_X_loss)
+            val_identity_X_losses.append(validate_identity_X_loss)
+            train_identity_Y_losses.append(train_identity_Y_loss)
+            val_identity_Y_losses.append(validate_identity_Y_loss)
 
             f.write(f"{epoch + 1}, {train_generator_loss:.4f}, {validate_generator_loss:.4f},"
                      f"{train_discriminator_X_loss:.4f}, {validate_discriminator_X_loss:.4f},"
-                     f"{train_discriminator_Y_loss:.4f}, {validate_discriminator_Y_loss:.4f}\n")
+                     f"{train_discriminator_Y_loss:.4f}, {validate_discriminator_Y_loss:.4f},"
+                     f"{train_identity_X_loss:.4f}, {validate_identity_X_loss:.4f},"
+                     f"{train_identity_Y_loss:.4f}, {validate_identity_Y_loss:.4f}\n")
             
             #print(f"[Epoch {epoch + 1}]")
             print(f"Generator loss: Train = {train_generator_loss:.4f}, Validation = {validate_generator_loss:.4f}")
             print(f"Discriminator X loss: Train = {train_discriminator_X_loss:.4f}, Validation = {validate_discriminator_X_loss:.4f}")
             print(f"Discriminator Y loss: Train = {train_discriminator_Y_loss:.4f}, Validation = {validate_discriminator_Y_loss:.4f}")
+            print(f"Identity X loss: Train = {train_identity_X_loss:.4f}, Validation = {validate_identity_X_loss:.4f}")
+            print(f"Identity Y loss: Train = {train_identity_Y_loss:.4f}, Validation = {validate_identity_Y_loss:.4f}")
            
             # save best model
             if validate_generator_loss < best_val_generator_loss:
@@ -427,13 +496,24 @@ def main():
     val_discriminator_X_losses = torch.tensor(val_discriminator_X_losses)
     train_discriminator_Y_losses = torch.tensor(train_discriminator_Y_losses)
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
+    train_identity_X_losses = torch.tensor(train_identity_X_losses)
+    val_identity_X_losses = torch.tensor(val_identity_X_losses)
+    train_identity_Y_losses = torch.tensor(train_identity_Y_losses)
+    val_identity_Y_losses = torch.tensor(val_identity_Y_losses)
+    train_identity_X_losses = torch.tensor(train_identity_X_losses)
+    val_identity_X_losses = torch.tensor(val_identity_X_losses)
+    train_identity_Y_losses = torch.tensor(train_identity_Y_losses)
+    val_identity_Y_losses = torch.tensor(val_identity_Y_losses)
 
     # visualise loss curves
     results_path = results_path = f'{args.results_path}'
     os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
-                      train_discriminator_Y_losses, val_discriminator_Y_losses, results_path)
+                      train_discriminator_Y_losses, val_discriminator_Y_losses,
+                      train_identity_X_losses, val_identity_X_losses,
+                      train_identity_Y_losses, val_identity_Y_losses,
+                      results_path)
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
