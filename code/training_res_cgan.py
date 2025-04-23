@@ -116,7 +116,7 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
     for ham_batch, darkskin_batch in loop:
         real_X = ham_batch.float().to(device) # reference HAM
         real_Y = darkskin_batch.float().to(device) # reference darkskin images
-        real_Y = real_Y.unsqueeze(0)
+        #real_Y = real_Y.unsqueeze(0)
         n += 1
         
         # ==========================GENERATOR==========================
@@ -199,7 +199,7 @@ def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, genera
         for ham_batch, darkskin_batch in loop:
             real_X = ham_batch.float().to(device)
             real_Y = darkskin_batch.float().to(device)  # reference darkskin images
-            real_Y = real_Y.unsqueeze(0)
+            #real_Y = real_Y.unsqueeze(0)
             n += 1
 
             # ==========================GENERATOR==========================
