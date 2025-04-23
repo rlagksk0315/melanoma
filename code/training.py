@@ -16,7 +16,7 @@ import itertools
 parser = argparse.ArgumentParser(description='CycleGAN Training Script')
 parser.add_argument('--gen_images_path', type=str, default='../generated_images')
 parser.add_argument('--results_path', type=str, default='../results')
-parser.add_argument('--num_epochs', type=int, default=100)
+parser.add_argument('--num_epochs', type=int, default=200)
 parser.add_argument('--learning_rate', type=float, default=0.0002)
 parser.add_argument('--use_lr_decay', action='store_true', help='Apply learning rate decay')
 
@@ -138,7 +138,7 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
 
         # total generator loss
         loss_generator = (
-            loss_G_XtoY + loss_G_YtoX + 7 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
+            loss_G_XtoY + loss_G_YtoX + 10 * (loss_cycle_X + loss_cycle_Y) + 5 * (loss_identity_X + loss_identity_Y)
         )
 
         loss_generator.backward()
