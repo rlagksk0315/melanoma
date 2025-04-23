@@ -529,10 +529,6 @@ def main():
     val_identity_X_losses = torch.tensor(val_identity_X_losses)
     train_identity_Y_losses = torch.tensor(train_identity_Y_losses)
     val_identity_Y_losses = torch.tensor(val_identity_Y_losses)
-    train_identity_X_losses = torch.tensor(train_identity_X_losses)
-    val_identity_X_losses = torch.tensor(val_identity_X_losses)
-    train_identity_Y_losses = torch.tensor(train_identity_Y_losses)
-    val_identity_Y_losses = torch.tensor(val_identity_Y_losses)
 
     # visualise loss curves
     results_path = results_path = f'{args.results_path}'
