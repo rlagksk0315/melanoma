@@ -3,12 +3,18 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.metrics import accuracy_score
 from tqdm.auto import tqdm
+import os
 
-def train(model, train_loader, val_loader, pos_ratio, device, epochs=10, lr=1e-3, save_path='models/model_best_loss.pth', save_path2='models/model_best_acc.pth'):
+def train(model, train_loader, val_loader, pos_ratio, device, epochs=10, lr=1e-3, results_path='results'):
     pos_weight = torch.tensor([pos_ratio], dtype=torch.float32).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=lr)
     model.to(device)
+
+    os.makedirs(results_path, exist_ok=True)
+    save_path = os.path.join(results_path, 'model1_best_loss.pth')
+    save_path2 = os.path.join(results_path, 'model1_best_acc.pth')
+
     
     train_losses, train_accs = [], []
     val_losses, val_accs = [], []
