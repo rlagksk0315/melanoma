@@ -33,7 +33,7 @@ def main():
     train_metrics = train(model, train_loader, val_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate, results_path=args.results_path)
 
     #TODO: add appropriate results_path when running the code
-    plot_loss(train_metrics, args.results_path, "model_best")
+    plot_loss(train_metrics, args.results_path, "model2_best")
 
     # Save the model 
     #TODO: change the model path to the right name
