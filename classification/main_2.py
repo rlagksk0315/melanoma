@@ -1,7 +1,7 @@
 import torch
 import os
-from data.preprocessing import load_ddi_metadata, split_data, get_dataloaders_2, get_pos_ratio
-from models.efficientnet import get_efficientnet
+from data_loading import load_ddi_metadata, split_data, get_dataloaders, get_pos_ratio
+from models import get_efficientnet
 from main_1 import plot_loss
 from train import train
 from evaluate import evaluate
@@ -19,7 +19,7 @@ parser.add_argument('--learning_rate', type=float, default=1e-3)
 
 args = parser.parse_args()
 
-def main_2():
+def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     #TODO: change the load_ham_metadata function to the right name
@@ -28,12 +28,12 @@ def main_2():
     pos_ratio = get_pos_ratio(train_df)
 
     #TODO: change the get_dataloaders_1 function to the right name
-    train_loader, val_loader, test_loader = get_dataloaders_2(train_df, val_df, test_df, '../data/ddi_cropped/images', batch_size=32)
+    train_loader, val_loader, test_loader = get_dataloaders(train_df, val_df, test_df, '../data/ddi_cropped/images', batch_size=32)
     model = get_efficientnet(num_classes=2, pretrained=True)
     train_metrics = train(model, train_loader, val_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
 
     #TODO: add appropriate results_path when running the code
-    plot_loss(train_metrics, args.results_path, "model_2")
+    plot_loss(train_metrics, args.results_path, "model2")
 
     # Save the model 
     #TODO: change the model path to the right name
@@ -49,4 +49,4 @@ def main_2():
     print("Best-acc: ", evaluate(model, test_loader, device))
 
 if __name__ == "__main__":
-    main_2()
+    main()

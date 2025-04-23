@@ -1,7 +1,7 @@
 import torch
 import os
-from data.preprocessing import load_ham_metadata, split_data, get_dataloaders_1, get_pos_ratio
-from models.efficientnet import get_efficientnet
+from data_loading import load_ham_metadata, split_data, get_dataloaders, get_pos_ratio
+from models import get_efficientnet
 from train import train
 from evaluate import evaluate
 import matplotlib.pyplot as plt
@@ -29,7 +29,7 @@ def plot_loss(train_metrics, results_path,model_num):
     plt.savefig(f'{results_path}/{model_num}_loss_curves.png', bbox_inches='tight', dpi=300)
     plt.close()
 
-def main_1():
+def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     #TODO: change the load_ham_metadata function to the right name
@@ -38,7 +38,7 @@ def main_1():
     pos_ratio = get_pos_ratio(train_df)
 
     #TODO: change the get_dataloaders_1 function to the right name
-    train_loader, val_loader, test_loader = get_dataloaders_1(train_df, val_df, test_df, '../data/HAM10000/images', batch_size=32)
+    train_loader, val_loader, test_loader = get_dataloaders(train_df, val_df, test_df, '../data/HAM10000/images', batch_size=32)
     model = get_efficientnet(num_classes=2, pretrained=True)
     train_metrics = train(model, train_loader, val_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
 
@@ -59,4 +59,4 @@ def main_1():
     print("Best-acc: ", evaluate(model, test_loader, device))
 
 if __name__ == "__main__":
-    main_1()
+    main()

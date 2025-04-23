@@ -25,10 +25,9 @@ def train(model, train_loader, val_loader, pos_ratio, device, epochs=10, lr=1e-3
         total_samples = 0
         
         for batch_idx, (data, targets) in enumerate(tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs}")):
-            data = data.to(device)
-            targets = targets.float().to(device)
+            data, targets = data.to(device), targets.float().to(device)
             
-            outputs = model(data).squeeze()
+            outputs = model(data).squeeze(1)
             loss = criterion(outputs, targets)
             
             optimizer.zero_grad()
@@ -52,8 +51,8 @@ def train(model, train_loader, val_loader, pos_ratio, device, epochs=10, lr=1e-3
         with torch.no_grad():
             for data, targets in tqdm(val_loader, desc=f"Validation"):
                 data, targets = data.to(device), targets.float().to(device)
-                outputs = model(data).squeeze()
                 
+                outputs = model(data).squeeze(1)
                 loss = criterion(outputs, targets)
                 val_loss += loss.item()
                 
