@@ -39,7 +39,7 @@ def main():
 
     #TODO: change the get_dataloaders_1 function to the right name
     train_loader, val_loader, test_loader = get_dataloaders(train_df, val_df, test_df, '../data/HAM10000/images', batch_size=32)
-    model = get_efficientnet(num_classes=2, pretrained=True)
+    model = get_efficientnet(num_classes=1, pretrained=True)
     train_metrics = train(model, train_loader, val_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
 
     #TODO: add appropriate results_path when running the code

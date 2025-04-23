@@ -1,11 +1,12 @@
 import torch
 import os
-from data.preprocessing import load_ham_metadata, load_ddi_metadata, split_data, get_dataloaders_3, get_pos_ratio
-from models.efficientnet import get_efficientnet
+from data_loading import load_ham_metadata, load_ddi_metadata, split_data, get_dataloaders_3, get_pos_ratio
+from models import get_efficientnet
 from main_1 import plot_loss
 from train import train
 from evaluate import evaluate
 import argparse
+import pandas as pd
 
 """
 Training for malignant/benign lesion classification on HAM+DDI dataset.
@@ -24,12 +25,17 @@ def main_3():
     #TODO: change the load_ham_metadata function to the right name
     df_HAM = load_ham_metadata('../data/HAM10000/HAM10000_metadata.csv')
     df_DDI = load_ddi_metadata('../data/ddi_cropped/ddi_metadata.csv')
-    train_df, val_df, test_df = split_data(df_DDI)
-    pos_ratio = get_pos_ratio(train_df)
+    train_ham_df, val_ham_df, test_ham_df = split_data(df_HAM)
+    train_ddi_df, val_ddi_df, test_ddi_df = split_data(df_DDI)
+    pos_ratio = get_pos_ratio(pd.concat([train_ham_df, train_ddi_df]))
 
     #TODO: change the get_dataloaders_1 function to the right name
-    train_loader, val_loader, test_loader = get_dataloaders_3(train_df, val_df, test_df, '../data/HAM10000/images', '../data/ddi_cropped/images', batch_size=32)
-    model = get_efficientnet(num_classes=2, pretrained=True)
+    train_loader, val_loader, test_loader = get_dataloaders_3(train_ham_df, val_ham_df, test_ham_df,
+                                                              train_ddi_df, val_ddi_df, test_ddi_df,
+                                                              '../data/HAM10000/images',
+                                                              '../data/ddi_cropped/images',
+                                                              batch_size=32)
+    model = get_efficientnet(num_classes=1, pretrained=True)
     train_metrics = train(model, train_loader, val_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
 
     #TODO: add appropriate results_path when running the code
