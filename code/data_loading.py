@@ -21,7 +21,9 @@ class DDIDataset(Dataset):
         """
         df = pd.read_csv(csv_file)
         if file_list is not None:
-            df = df[df["DDI_file"].isin(file_list)].reset_index(drop=True)
+            df = df[df["DDI_file"].isin(file_list)]
+
+        df = df[df["skin_tone"] > skin_threshold].reset_index(drop=True) # drops all skin tones that are below threshold
         self.df = df
         self.data_dir = data_dir
         self.transform = transform
@@ -36,9 +38,6 @@ class DDIDataset(Dataset):
         img = Image.open(img_path).convert("RGB")
         if self.transform:
             img = self.transform(img)
-        skin_lbl = 0 if row["skin_tone"] < self.skin_threshold else 1
-        malignant = int(row["malignant"])
-        #return img, skin_lbl, malignant
         return img
     
 class HAMDataset(Dataset):
@@ -61,6 +60,7 @@ class HAMDataset(Dataset):
             f for f in os.listdir(data_dir)
             if os.path.splitext(f)[1].lower() == ".jpg"
         ]
+
         if file_list is not None:
             files = [f for f in files if f in file_list]
         self.image_files = sorted(files)
@@ -74,13 +74,11 @@ class HAMDataset(Dataset):
 
         row = self.meta.loc[image_id]
         dx = row["dx"].strip().lower()
-        malignant = int(dx == "melanoma")
         
         img = Image.open(os.path.join(self.data_dir, fname)).convert("RGB")
         if self.transform:
             img = self.transform(img)
 
-        #return img, malignant
         return img, image_id
     
 class SCINDataset(Dataset): #SCIN dataset --> filtered such that only darkskin images (monkscale USA 7-10) are included
@@ -92,7 +90,11 @@ class SCINDataset(Dataset): #SCIN dataset --> filtered such that only darkskin i
         """
         self.data_dir = data_dir
         self.transform = transform
-        self.file_list = file_list if file_list is not None else os.listdir(data_dir)
+        raw_files = file_list if file_list is not None else os.listdir(data_dir)
+        self.file_list = [
+            f for f in raw_files
+            if f.lower().endswith(('.jpg', '.jpeg', '.png'))
+        ]
 
     def __len__(self):
         return len(self.file_list)
@@ -111,7 +113,11 @@ class SCINDataset(Dataset): #SCIN dataset --> filtered such that only darkskin i
 # data splitting
 # train: 60%, val: 20%, test: 20%
 def split_data(data_dir, train_ratio=0.6, val_ratio=0.2):
-    all_files = os.listdir(data_dir)
+    all_files = [
+        f for f in os.listdir(data_dir)
+        if os.path.isfile(os.path.join(data_dir, f))
+        and f.lower().endswith(('.jpg', '.jpeg', '.png'))
+    ]  
     num_files = len(all_files)
     
     train_size = int(num_files * train_ratio)
