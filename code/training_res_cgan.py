@@ -141,8 +141,9 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
     n = 0 # batch
 
     loop = tqdm(zip(ham_loader_train, darkskin_loader_train), total=min(len(ham_loader_train), len(darkskin_loader_train)))
-    for ham_batch, darkskin_batch in loop:
-        real_X = ham_batch.float().to(device) # reference HAM
+    for (real_X, real_X_id), darkskin_batch in loop:
+        real_X = real_X.float().to(device) # reference HAM
+        real_X_id = real_X_id[0]
         real_Y = darkskin_batch.float().to(device) # reference darkskin images
         #real_Y = real_Y.unsqueeze(0)
         n += 1
@@ -211,11 +212,8 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
     average_generator_loss = total_generator_loss / n
     average_discriminator_X_loss = total_discriminator_X_loss / n
     average_discriminator_Y_loss = total_discriminator_Y_loss / n
-<<<<<<< HEAD
-=======
     average_identity_X_loss = total_identity_X_loss / n
     average_identity_Y_loss = total_identity_Y_loss / n
->>>>>>> 1601e25afe9e2116c42da4f35691abff8edf2f24
         
     return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss, average_identity_X_loss, average_identity_Y_loss
 
@@ -232,8 +230,9 @@ def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, genera
 
     with torch.no_grad():
         loop = tqdm(zip(ham_loader_val, darkskin_loader_val), total=min(len(ham_loader_val), len(darkskin_loader_val)))
-        for ham_batch, darkskin_batch in loop:
-            real_X = ham_batch.float().to(device)
+        for (real_X, real_X_id), darkskin_batch in loop:
+            real_X = real_X.float().to(device)
+            real_X_id = real_X_id[0]
             real_Y = darkskin_batch.float().to(device)  # reference darkskin images
             #real_Y = real_Y.unsqueeze(0)
             n += 1
@@ -286,7 +285,7 @@ def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, genera
     average_identity_Y_loss = total_identity_Y_loss / n
 
     # Display images
-    display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch)
+    display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch, real_X_id)
 
     return average_generator_loss, average_discriminator_X_loss, average_discriminator_Y_loss, average_identity_X_loss, average_identity_Y_loss
 
@@ -354,7 +353,7 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
 
 
 # display images
-def display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch, num_images=1):
+def display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch, real_X_id, num_images=1):
     """
     Displays real and generated images for reference and comparison.
     """
@@ -414,7 +413,7 @@ def display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch, num_i
     axes[3].set_title(f"Identity X")
     axes[3].axis('off')
         
-    plt.savefig(f'{image_path}/epoch{epoch+1}_real_fake_cycle_identity.png')
+    plt.savefig(f'{image_path}/epoch{epoch+1}_{real_X_id}_real_fake_cycle_identity.png')
 
 
 def main():
