@@ -124,8 +124,8 @@ def split_data(data_dir, train_ratio=0.6, val_ratio=0.2):
     val_size = int(num_files * val_ratio)
 
     if data_dir=="../data/dark_scin/images" or data_dir=="../data/light_scin/images":
-        train_size = num_files-2
-        val_size = 1
+        train_size = num_files-4
+        val_size = 2
     
     train_files = all_files[:train_size]
     val_files = all_files[train_size:train_size + val_size]

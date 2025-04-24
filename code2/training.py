@@ -18,7 +18,7 @@ import itertools
 parser = argparse.ArgumentParser(description='CycleGAN Training Script')
 parser.add_argument('--gen_images_path', type=str, default='../generated_images')
 parser.add_argument('--results_path', type=str, default='../results')
-parser.add_argument('--num_epochs', type=int, default=200)
+parser.add_argument('--num_epochs', type=int, default=10)
 parser.add_argument('--learning_rate', type=float, default=0.0002)
 parser.add_argument('--use_lr_decay', action='store_true', help='Apply learning rate decay')
 
@@ -91,6 +91,18 @@ optimizer_for_generators = optim.Adam(
 )
 optimizer_discriminator_X = optim.Adam(Discriminator_X.parameters(), lr=learning_rate, betas=(0.5, 0.999))
 optimizer_discriminator_Y = optim.Adam(Discriminator_Y.parameters(), lr=learning_rate, betas=(0.5, 0.999))
+
+# learning rate decay
+if args.use_lr_decay:
+    def lambda_rule(epoch):
+        if epoch < 100:
+            return 1.0
+        else:
+            return 1.0 - (epoch - 100) / float(epochs - 100 + 1)
+
+    scheduler_G = optim.lr_scheduler.LambdaLR(optimizer_for_generators, lr_lambda=lambda_rule)
+    scheduler_D_X = optim.lr_scheduler.LambdaLR(optimizer_discriminator_X, lr_lambda=lambda_rule)
+    scheduler_D_Y = optim.lr_scheduler.LambdaLR(optimizer_discriminator_Y, lr_lambda=lambda_rule)
 
 # Training
 def train_cyclegan(lightskin_loader_train, darkskin_loader_train, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
@@ -349,7 +361,7 @@ def main():
                 device = device
             )
 
-            validation_img_path = '../generated_images/isalis/validation5' # path to save validation generated images
+            validation_img_path = '../generated_images/isalis/validation6' # path to save validation generated images
             os.makedirs(validation_img_path, exist_ok=True)
 
             validate_generator_loss, validate_discriminator_X_loss, validate_discriminator_Y_loss = validate_cyclegan(
@@ -391,9 +403,19 @@ def main():
                    'Discriminator_X': Discriminator_X.state_dict(),
                    'Discriminator_Y': Discriminator_Y.state_dict(),
                 }
+            
+            # learning rate decay
+            if args.use_lr_decay:
+                scheduler_G.step()
+                scheduler_D_X.step()
+                scheduler_D_Y.step()
+
+            if args.use_lr_decay:
+                current_lr = scheduler_G.get_last_lr()[0]
+                print(f"Current Learning Rate: {current_lr:.6f}")
 
     if best_model_state is not None:
-        torch.save(best_model_state, '../results/isalis/5_balanced/best_cyclegan_model.pth')
+        torch.save(best_model_state, '../results/isalis/6_batchnorm/best_cyclegan_model.pth')
         print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
 
     train_generator_losses = torch.tensor(train_generator_losses)
@@ -404,7 +426,7 @@ def main():
     val_discriminator_Y_losses = torch.tensor(val_discriminator_Y_losses)
 
     # visualise loss curves
-    results_path = '../results/isalis/5_balanced'
+    results_path = '../results/isalis/6_batchnorm'
     os.makedirs(results_path, exist_ok=True)
     visualize_metrics(train_generator_losses, val_generator_losses, 
                       train_discriminator_X_losses, val_discriminator_X_losses,
