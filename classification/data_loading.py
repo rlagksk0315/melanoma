@@ -128,6 +128,27 @@ def get_dataloaders_3(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2
     
     return train_loader, val_loader1, test_loader1, val_loader2, test_loader2
 
+def get_dataloaders_4(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2, train_df3, root_dir1, root_dir2, root_dir3, batch_size=32):
+    train_transform, eval_transform = get_transforms()
+
+    train_dataset1 = ClassificationDataset(root_dir1, train_df1, transform=train_transform)
+    val_dataset1 = ClassificationDataset(root_dir1, val_df1, transform=eval_transform)
+    test_dataset1 = ClassificationDataset(root_dir1, test_df1, transform=eval_transform)
+    train_dataset2 = ClassificationDataset(root_dir2, train_df2, transform=train_transform)
+    val_dataset2 = ClassificationDataset(root_dir2, val_df2, transform=eval_transform)
+    test_dataset2 = ClassificationDataset(root_dir2, test_df2, transform=eval_transform)
+    train_dataset3 = ClassificationDataset(root_dir3, train_df3, transform=train_transform)
+
+    train_dataset = ConcatDataset([train_dataset1, train_dataset2, train_dataset3])
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader1 = DataLoader(val_dataset1, batch_size=batch_size, shuffle=False)
+    test_loader1 = DataLoader(test_dataset1, batch_size=batch_size, shuffle=False)   
+    val_loader2 = DataLoader(val_dataset2, batch_size=batch_size, shuffle=False)
+    test_loader2 = DataLoader(test_dataset2, batch_size=batch_size, shuffle=False)
+    
+    return train_loader, val_loader1, test_loader1, val_loader2, test_loader2
+
 def get_pos_ratio(df):
     num_pos = (df['label'] == 1).sum()
     num_neg = (df['label'] == 0).sum()
@@ -137,11 +158,13 @@ def get_pos_ratio(df):
 def main():
     ham_dir = "../data/HAM10000"
     ddi_dir = "../data/ddi_cropped"
-    generated_dir = "../data/darHAM"
+    generated_dir = "../data/darkHAM"
+    generated_dir2 = "../data/darkHAM2"
 
     ham_df = load_ham_metadata(ham_dir+'/HAM10000_metadata.csv')
     df_DDI = load_ddi_metadata(ddi_dir+'/ddi_metadata.csv')
-    generated_df = load_generated_metadata(generated_dir+'/HAM10000_metadata.csv')
+    generated_df = load_generated_metadata(ham_dir+'/HAM10000_metadata.csv', generated_dir)
+    generated_df2 = load_generated_metadata(ham_dir+'/HAM10000_metadata.csv', generated_dir2)
 
     print('Data loading complete!')
 

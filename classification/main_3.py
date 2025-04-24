@@ -3,7 +3,7 @@ import os
 from data_loading import load_ham_metadata, load_ddi_metadata, split_data, get_dataloaders_3, get_pos_ratio
 from models import get_efficientnet
 from main_1 import plot_loss
-from train import train
+from train import train_3
 from evaluate import evaluate
 import argparse
 import pandas as pd
@@ -30,16 +30,19 @@ def main_3():
     pos_ratio = get_pos_ratio(pd.concat([train_ham_df, train_ddi_df]))
 
     #TODO: change the get_dataloaders_1 function to the right name
-    train_loader, val_loader, test_loader = get_dataloaders_3(train_ham_df, val_ham_df, test_ham_df,
-                                                              train_ddi_df, val_ddi_df, test_ddi_df,
-                                                              '../data/HAM10000/images',
-                                                              '../data/ddi_cropped/images',
-                                                              batch_size=32)
+    (train_loader,
+     val_ham_loader, test_ham_loader,
+     val_ddi_loader, test_ddi_loader) = get_dataloaders_3(train_ham_df, val_ham_df, test_ham_df,
+                                                          train_ddi_df, val_ddi_df, test_ddi_df,
+                                                          '../data/HAM10000/images',
+                                                          '../data/ddi_cropped/images',
+                                                          batch_size=32)
     model = get_efficientnet(num_classes=1, pretrained=True)
-    train_metrics = train(model, train_loader, val_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
+    train_metrics_ham, train_metrics_ddi = train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
 
     #TODO: add appropriate results_path when running the code
-    plot_loss(train_metrics, args.results_path, "model_3")
+    plot_loss(train_metrics_ham, args.results_path, "model_3")
+    plot_loss(train_metrics_ddi, args.results_path, "model_3")
 
     # Save the model 
     #TODO: change the model path to the right name
