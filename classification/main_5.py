@@ -25,10 +25,11 @@ def main():
     #TODO: change the load_ham_metadata function to the right name
     df_HAM = load_ham_metadata('../data/HAM10000/HAM10000_metadata.csv')
     df_DDI = load_ddi_metadata('../data/ddi_cropped/ddi_metadata.csv')
-    df_AUG = load_generated_metadata('../data/HAM10000/HAM10000_metadata.csv', '../data/darkHAM2')   # TODO: change the path to the right name 
+    df_AUG = load_generated_metadata('../data/HAM10000/HAM10000_metadata.csv', '../data/darkHAM_sigproc')   # TODO: change the path to the right name 
     train_ham_df, val_ham_df, test_ham_df = split_data(df_HAM)
     train_ddi_df, val_ddi_df, test_ddi_df = split_data(df_DDI)
-    train_aug_df, val_aug_df, test_aug_df = split_data(df_AUG)
+    df_AUG['image_id'] = df_AUG['image_path'].apply(lambda x: x.split('_fake_Y')[0]) + '.jpg'
+    train_aug_df = df_AUG[(df_AUG['image_id']).isin(train_ham_df['image_path'])][['id','image_path','label']]
     pos_ratio = get_pos_ratio(pd.concat([train_ham_df, train_ddi_df, train_aug_df]))
 
     #TODO: change the get_dataloaders_1 function to the right name
@@ -39,7 +40,7 @@ def main():
                                                           train_aug_df,
                                                           '../data/HAM10000/images',
                                                           '../data/ddi_cropped/images',
-                                                          '../data/darkHAM2',
+                                                          '../data/darkHAM_sigproc',
                                                           batch_size=32)
     model = get_efficientnet(num_classes=1, pretrained=True)
     train_metrics_ham, train_metrics_ddi = train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, results_path=args.results_path, epochs=args.num_epochs, lr=args.learning_rate)
