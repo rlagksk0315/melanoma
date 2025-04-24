@@ -46,7 +46,7 @@ def main_3():
 
     # Save the model 
     #TODO: change the model path to the right name
-    best_loss_ckpt = os.path.join(args.results_path, 'model3_best_loss.pth')
+    best_loss_ckpt = os.path.join(args.results_path, 'model_best_loss.pth')
     state = torch.load(best_loss_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
     print("Best-loss DDI: ", evaluate(model, test_ddi_loader, args.results_path, "loss_model_3_ddi", device))
@@ -54,7 +54,7 @@ def main_3():
     
 
     # evaluate checkpoint with best validation accuracy
-    best_acc_ckpt = os.path.join(args.results_path, 'model3_best_acc.pth')
+    best_acc_ckpt = os.path.join(args.results_path, 'model_best_acc.pth')
     state = torch.load(best_acc_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
     print("Best-acc DDI: ", evaluate(model, test_ddi_loader, args.results_path, "acc_model_3_ddi", device))

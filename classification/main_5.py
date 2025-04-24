@@ -13,7 +13,7 @@ Training for malignant/benign lesion classification on HAM+DDI+augmented dataset
 """
 
 parser = argparse.ArgumentParser(description='Train malignant/benign classifier')
-parser.add_argument('--results_path', type=str, default='results/(your_name)/model_4', help='Path to save the results')
+parser.add_argument('--results_path', type=str, default='results/(your_name)/model_5', help='Path to save the results')
 parser.add_argument('--num_epochs', type=int, default=200)
 parser.add_argument('--learning_rate', type=float, default=1e-3)
 
@@ -45,23 +45,23 @@ def main():
     train_metrics_ham, train_metrics_ddi = train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
 
     #TODO: add appropriate results_path when running the code
-    plot_loss(train_metrics_ham, args.results_path, "model_4_ham")
-    plot_loss(train_metrics_ddi, args.results_path, "model_4_ddi")
+    plot_loss(train_metrics_ham, args.results_path, "model_5_ham")
+    plot_loss(train_metrics_ddi, args.results_path, "model_5_ddi")
 
     # Save the model 
     #TODO: change the model path to the right name
-    best_loss_ckpt = os.path.join(args.results_path, 'model4_best_loss.pth')
+    best_loss_ckpt = os.path.join(args.results_path, 'model_best_loss.pth')
     state = torch.load(best_loss_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-loss DDI: ", evaluate(model, test_ddi_loader, args.results_path, "loss_model_4_ddi", device))
-    print("Best-loss HAM: ", evaluate(model, test_ham_loader, args.results_path, "loss_model_4_ddi", device))
+    print("Best-loss DDI: ", evaluate(model, test_ddi_loader, args.results_path, "loss_model_5_ddi", device))
+    print("Best-loss HAM: ", evaluate(model, test_ham_loader, args.results_path, "loss_model_5_ddi", device))
 
     # evaluate checkpoint with best validation accuracy
-    best_acc_ckpt = os.path.join(args.results_path, 'model4_best_acc.pth')
+    best_acc_ckpt = os.path.join(args.results_path, 'model_best_acc.pth')
     state = torch.load(best_acc_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-acc DDI: ", evaluate(model, test_ddi_loader, args.results_path, "acc_model_4_ddi", device))
-    print("Best-acc HAM: ", evaluate(model, test_ham_loader, args.results_path, "acc_model_4_ham", device))
+    print("Best-acc DDI: ", evaluate(model, test_ddi_loader, args.results_path, "acc_model_5_ddi", device))
+    print("Best-acc HAM: ", evaluate(model, test_ham_loader, args.results_path, "acc_model_5_ham", device))
 
 if __name__ == "__main__":
     main()
