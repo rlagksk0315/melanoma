@@ -49,16 +49,16 @@ def main_3():
     best_loss_ckpt = os.path.join(args.results_path, 'model3_best_loss.pth')
     state = torch.load(best_loss_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-loss DDI: ", evaluate(model, test_ddi_loader, device))
-    print("Best-loss HAM: ", evaluate(model, test_ham_loader, device))
+    print("Best-loss DDI: ", evaluate(model, test_ddi_loader, args.results_path, "model 3", device))
+    print("Best-loss HAM: ", evaluate(model, test_ham_loader, args.results_path, "model 3", device))
     
 
     # evaluate checkpoint with best validation accuracy
     best_acc_ckpt = os.path.join(args.results_path, 'model3_best_acc.pth')
     state = torch.load(best_acc_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-acc DDI: ", evaluate(model, test_ddi_loader, device))
-    print("Best-acc HAM: ", evaluate(model, test_ham_loader, device))
+    print("Best-acc DDI: ", evaluate(model, test_ddi_loader, args.results_path, "model 3", device))
+    print("Best-acc HAM: ", evaluate(model, test_ham_loader, args.results_path, "model 3", device))
 
 if __name__ == "__main__":
     main_3()

@@ -11,13 +11,13 @@ import argparse
 Training for malignant/benign lesion classification on HAM10000 dataset.
 """
 parser = argparse.ArgumentParser(description='Train malignant/benign classifier')
-parser.add_argument('--results_path', type=str, default='results/(your_name)', help='Path to save the results')
-parser.add_argument('--num_epochs', type=int, default=200)
+parser.add_argument('--results_path', type=str, default='results/isalis', help='Path to save the results')
+parser.add_argument('--num_epochs', type=int, default=1)
 parser.add_argument('--learning_rate', type=float, default=1e-3)
 
 args = parser.parse_args()
 
-def plot_loss(train_metrics, results_path,model_num):
+def plot_loss(train_metrics, results_path, model_num):
     os.makedirs(results_path, exist_ok=True)
     plt.figure(figsize=(12, 5))
     plt.plot(train_metrics['train_losses'], label='Train Loss')
@@ -50,13 +50,13 @@ def main():
     best_loss_ckpt = os.path.join(args.results_path, 'model1_best_loss.pth')
     state = torch.load(best_loss_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-loss: ", evaluate(model, test_loader, device))
+    print("Best-loss: ", evaluate(model, test_loader, args.results_path, "model 1", device))
 
     # evaluate checkpoint with best validation accuracy
     best_acc_ckpt = os.path.join(args.results_path, 'model1_best_acc.pth')
     state = torch.load(best_acc_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-acc: ", evaluate(model, test_loader, device))
+    print("Best-acc: ", evaluate(model, test_loader, args.results_path, "model 1", device))
 
 if __name__ == "__main__":
     main()
