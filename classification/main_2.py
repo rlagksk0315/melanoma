@@ -33,20 +33,20 @@ def main():
     train_metrics = train(model, train_loader, val_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate, results_path=args.results_path)
 
     #TODO: add appropriate results_path when running the code
-    plot_loss(train_metrics, args.results_path, "model2_best")
+    plot_loss(train_metrics, args.results_path, "model_2")
 
     # Save the model 
     #TODO: change the model path to the right name
     best_loss_ckpt = os.path.join(args.results_path, 'model2_best_loss.pth')
     state = torch.load(best_loss_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-loss: ", evaluate(model, test_loader, args.results_path, "model 2", device))
+    print("Best-loss: ", evaluate(model, test_loader, args.results_path, "loss_model_2", device))
 
     # evaluate checkpoint with best validation accuracy
     best_acc_ckpt = os.path.join(args.results_path, 'model2_best_acc.pth')
     state = torch.load(best_acc_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-acc: ", evaluate(model, test_loader, args.results_path, "model 2", device))
+    print("Best-acc: ", evaluate(model, test_loader, args.results_path, "acc_model_2", device))
 
 if __name__ == "__main__":
     main()
