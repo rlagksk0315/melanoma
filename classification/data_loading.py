@@ -149,6 +149,22 @@ def get_dataloaders_4(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2
     
     return train_loader, val_loader1, test_loader1, val_loader2, test_loader2
 
+def get_dataloaders_8(train_df1, train_df2, val_df2, test_df2, root_dir1, root_dir2, batch_size=32):
+    train_transform, eval_transform = get_transforms()
+
+    train_dataset1 = ClassificationDataset(root_dir1, train_df1, transform=train_transform)
+    train_dataset2 = ClassificationDataset(root_dir2, train_df2, transform=train_transform)
+    val_dataset = ClassificationDataset(root_dir2, val_df2, transform=eval_transform)
+    test_dataset = ClassificationDataset(root_dir2, test_df2, transform=eval_transform)
+
+    train_dataset = ConcatDataset([train_dataset1, train_dataset2])
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    
+    return train_loader, val_loader, test_loader
+
 def get_pos_ratio(df):
     num_pos = (df['label'] == 1).sum()
     num_neg = (df['label'] == 0).sum()
