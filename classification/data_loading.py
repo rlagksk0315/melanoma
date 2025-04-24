@@ -43,9 +43,9 @@ def load_ddi_metadata(csv_path):
 def load_generated_metadata(csv_path, images_path):
     df = pd.read_csv(csv_path)
     generated_images = set(os.listdir(images_path))
-    original_images = {img.split("_dark")[0] for img in generated_images if "_dark" in img}
-    df = df[df['image_id'].isin(original_images)].reset_index(drop=True)
-    df['image_path'] = df['image_id'] + '.jpg'
+    image_ids = [img.split("_fake_Y")[0] for img in generated_images]
+    df = df[df['image_id'].isin(image_ids)].reset_index(drop=True)
+    df['image_path'] = df['image_id'] + '_fake_Y.png'
     df['label'] = (df['dx'] == 'mel').astype(int)
     df = df.rename(columns={'lesion_id':'id'})
     df = df.drop(columns=['image_id', 'dx', 'dx_type', 'age', 'sex', 'localization'])
@@ -119,14 +119,14 @@ def get_dataloaders_3(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2
     test_dataset2 = ClassificationDataset(root_dir2, test_df2, transform=eval_transform)
 
     train_dataset = ConcatDataset([train_dataset1, train_dataset2])
-    val_dataset = ConcatDataset([val_dataset1, val_dataset2])
-    test_dataset = ConcatDataset([test_dataset1, test_dataset2])
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    val_loader1 = DataLoader(val_dataset1, batch_size=batch_size, shuffle=False)
+    test_loader1 = DataLoader(test_dataset1, batch_size=batch_size, shuffle=False)   
+    val_loader2 = DataLoader(val_dataset2, batch_size=batch_size, shuffle=False)
+    test_loader2 = DataLoader(test_dataset2, batch_size=batch_size, shuffle=False)
     
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader1, test_loader1, val_loader2, test_loader2
 
 def get_pos_ratio(df):
     num_pos = (df['label'] == 1).sum()
