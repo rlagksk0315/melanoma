@@ -50,13 +50,13 @@ def main():
     best_loss_ckpt = os.path.join(args.results_path, 'model1_best_loss.pth')
     state = torch.load(best_loss_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-loss: ", evaluate(model, test_loader, args.results_path, "model 1", device))
+    print("Best-loss: ", evaluate(model, test_loader, args.results_path, "loss_model_1", device))
 
     # evaluate checkpoint with best validation accuracy
     best_acc_ckpt = os.path.join(args.results_path, 'model1_best_acc.pth')
     state = torch.load(best_acc_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    print("Best-acc: ", evaluate(model, test_loader, args.results_path, "model 1", device))
+    print("Best-acc: ", evaluate(model, test_loader, args.results_path, "acc_model_1", device))
 
 if __name__ == "__main__":
     main()
