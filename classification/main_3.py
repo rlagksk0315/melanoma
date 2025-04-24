@@ -38,7 +38,7 @@ def main_3():
                                                           '../data/ddi_cropped/images',
                                                           batch_size=32)
     model = get_efficientnet(num_classes=1, pretrained=True)
-    train_metrics_ham, train_metrics_ddi = train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, epochs=args.num_epochs, lr=args.learning_rate)
+    train_metrics_ham, train_metrics_ddi = train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, results_path=args.results_path, epochs=args.num_epochs, lr=args.learning_rate)
 
     #TODO: add appropriate results_path when running the code
     plot_loss(train_metrics_ham, args.results_path, "model_3_ham")

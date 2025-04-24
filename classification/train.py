@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 from tqdm.auto import tqdm
 import os
 
-def train(model, train_loader, val_loader, pos_ratio, device, epochs=10, lr=1e-3, results_path='results'):
+def train(model, train_loader, val_loader, pos_ratio, device, results_path, epochs=10, lr=1e-3):
     pos_weight = torch.tensor([pos_ratio], dtype=torch.float32).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -101,7 +101,7 @@ def train(model, train_loader, val_loader, pos_ratio, device, epochs=10, lr=1e-3
             'val_losses': val_losses,
             'val_accs': val_accs}
 
-def train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, epochs=10, lr=1e-3, results_path='results'):
+def train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, results_path, epochs=10, lr=1e-3):
     pos_weight = torch.tensor([pos_ratio], dtype=torch.float32).to(device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=lr)
