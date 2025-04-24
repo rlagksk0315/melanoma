@@ -36,7 +36,7 @@ def main():
      val_ham_loader, test_ham_loader,
      val_ddi_loader, test_ddi_loader) = get_dataloaders_4(train_ham_df, val_ham_df, test_ham_df,
                                                           train_ddi_df, val_ddi_df, test_ddi_df,
-                                                          train_aug_df, val_aug_df, test_aug_df,
+                                                          train_aug_df,
                                                           '../data/HAM10000/images',
                                                           '../data/ddi_cropped/images',
                                                           '../data/darkHAM',
