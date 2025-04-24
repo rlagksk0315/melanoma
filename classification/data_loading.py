@@ -119,26 +119,6 @@ def get_dataloaders_3(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2
     test_dataset2 = ClassificationDataset(root_dir2, test_df2, transform=eval_transform)
 
     train_dataset = ConcatDataset([train_dataset1, train_dataset2])
-    val_dataset = ConcatDataset([val_dataset1, val_dataset2])
-    test_dataset = ConcatDataset([test_dataset1, test_dataset2])
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
-    
-    return train_loader, val_loader, test_loader
-
-def get_dataloaders_3(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2, root_dir1, root_dir2, batch_size=32):
-    train_transform, eval_transform = get_transforms()
-
-    train_dataset1 = ClassificationDataset(root_dir1, train_df1, transform=train_transform)
-    val_dataset1 = ClassificationDataset(root_dir1, val_df1, transform=eval_transform)
-    test_dataset1 = ClassificationDataset(root_dir1, test_df1, transform=eval_transform)
-    train_dataset2 = ClassificationDataset(root_dir2, train_df2, transform=train_transform)
-    val_dataset2 = ClassificationDataset(root_dir2, val_df2, transform=eval_transform)
-    test_dataset2 = ClassificationDataset(root_dir2, test_df2, transform=eval_transform)
-
-    train_dataset = ConcatDataset([train_dataset1, train_dataset2])
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader1 = DataLoader(val_dataset1, batch_size=batch_size, shuffle=False)
