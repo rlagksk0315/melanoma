@@ -1,6 +1,6 @@
 import os
 import torch
-import tqdm as tqdm
+from tqdm import tqdm
 import json
 import numpy as np
 import matplotlib.pyplot as plt
