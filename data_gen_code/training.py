@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 from PIL import Image
-from cyclegan_resnet import ResnetGenerator, PatchGANDiscriminator, ImageBuffer, lsgan_loss, generator_adversarial_loss, discriminator_adversarial_loss, cycle_loss, identity_loss
+from cyclegan import Generator, Discriminator, generator_adversarial_loss, discriminator_adversarial_loss, cycle_loss, identity_loss
 import itertools
 
 # Argparse Details
@@ -49,6 +49,7 @@ ddi_loader_train, ddi_loader_val, ham_loader_train, ham_loader_val, ham_loader_t
                                                                                                                         num_workers=num_workers,
                                                                                                                         seed=seed)
 
+
 #I combined the dataset for ddi & scin together as a darkskin_dataset 
 darkskin_loader_train = torch.utils.data.ConcatDataset([ddi_loader_train.dataset, scin_loader_train.dataset])
 darkskin_loader_val = torch.utils.data.ConcatDataset([ddi_loader_val.dataset, scin_loader_val.dataset])
@@ -58,19 +59,6 @@ darkskin_loader_train = DataLoader(darkskin_loader_train, batch_size=batch_size,
 darkskin_loader_val = DataLoader(darkskin_loader_val, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 #darkskin_loader_test = DataLoader(darkskin_loader_test, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
-
-
-'''
-combined_train_dataset = torch.utils.data.ConcatDataset([ham_loader_train.dataset, ddi_loader_train.dataset])
-train_loader = DataLoader(combined_train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
-
-combined_val_dataset = torch.utils.data.ConcatDataset([ham_loader_val.dataset, ddi_loader_val.dataset])
-val_loader = DataLoader(combined_val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
-
-combined_test_dataset = torch.utils.data.ConcatDataset([ham_loader_test.dataset, ddi_loader_test.dataset])
-test_loader = DataLoader(combined_test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
-'''
-
 # Set random seed for reproducibility
 torch.manual_seed(seed)
 
@@ -79,10 +67,10 @@ torch.manual_seed(seed)
 X to Y: upsampling (encoder)
 Y to X: downsampling (decoder)
 '''
-generate_XtoY = ResnetGenerator().to(device) #upsampling (encoder)
-generate_YtoX = ResnetGenerator().to(device) #downsampling (decoder)
-Discriminator_X = PatchGANDiscriminator().to(device) #discriminator for X 
-Discriminator_Y = PatchGANDiscriminator().to(device) #discriminator for Y
+generate_XtoY = Generator().to(device) #upsampling (encoder)
+generate_YtoX = Generator().to(device) #downsampling (decoder)
+Discriminator_X = Discriminator().to(device) #discriminator for X 
+Discriminator_Y = Discriminator().to(device) #discriminator for Y
 
 if args.optimizer == 'adam':
     optimizer_for_generators = optim.Adam(
@@ -124,11 +112,6 @@ else:
     scheduler_D_Y = None
 
 
-# image buffers
-fake_X_buffer = ImageBuffer()
-fake_Y_buffer = ImageBuffer()
-
-
 # Training
 def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, generate_YtoX, Discriminator_X, Discriminator_Y, device):
     # model.train() # Model in training mode
@@ -146,7 +129,6 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
         real_X = real_X.float().to(device) # reference HAM
         real_X_id = real_X_id[0]
         real_Y = darkskin_batch.float().to(device) # reference darkskin images
-        #real_Y = real_Y.unsqueeze(0)
         n += 1
         
         # ==========================GENERATOR==========================
@@ -188,17 +170,15 @@ def train_cyclegan(ham_loader_train, darkskin_loader_train, generate_XtoY, gener
         # Train discriminator X
         optimizer_discriminator_X.zero_grad()
 
-        fake_X_for_disc = fake_X_buffer.push_and_pop(fake_X)    # add buffer
-        loss_discriminator_X = discriminator_adversarial_loss(Discriminator_X, real_X, fake_X_for_disc)
+        loss_discriminator_X = discriminator_adversarial_loss(Discriminator_X, real_X, fake_X)
         
         loss_discriminator_X.backward()
         optimizer_discriminator_X.step()
 
         # Discriminator Y loss
         optimizer_discriminator_Y.zero_grad()
-        
-        fake_Y_for_disc = fake_Y_buffer.push_and_pop(fake_Y)    # add buffer
-        loss_discriminator_Y = discriminator_adversarial_loss(Discriminator_Y, real_Y, fake_Y_for_disc)
+
+        loss_discriminator_Y = discriminator_adversarial_loss(Discriminator_Y, real_Y, fake_Y)
         
         loss_discriminator_Y.backward()
         optimizer_discriminator_Y.step()
@@ -232,10 +212,9 @@ def validate_cyclegan(ham_loader_val, darkskin_loader_val, generate_XtoY, genera
     with torch.no_grad():
         loop = tqdm(zip(ham_loader_val, darkskin_loader_val), total=min(len(ham_loader_val), len(darkskin_loader_val)))
         for (real_X, real_X_id), darkskin_batch in loop:
-            real_X = real_X.float().to(device)
+            real_X = real_X.float().to(device) # reference HAM
             real_X_id = real_X_id[0]
-            real_Y = darkskin_batch.float().to(device)  # reference darkskin images
-            #real_Y = real_Y.unsqueeze(0)
+            real_Y = darkskin_batch.float().to(device) # reference darkskin images
             n += 1
 
             # ==========================GENERATOR==========================
@@ -352,7 +331,6 @@ def visualize_metrics(train_generator_losses, val_generator_losses,
     plt.savefig(f'{results_path}/identity_Y_loss.png')
     plt.show()
 
-
 def denormalize_image(image_tensor, dataset_type='Light'):
     """
     Denormalizes the image tensor based on the dataset (LIGHT or DARK).
@@ -376,7 +354,6 @@ def denormalize_image(image_tensor, dataset_type='Light'):
     image = np.clip(image, 0, 1)
     
     return image
-
 
 
 # display images
@@ -431,7 +408,6 @@ def display_images(image_path, real_X, fake_Y, cycle_X, identity_X, epoch, real_
     axes[3].axis('off')
         
     plt.savefig(f'{image_path}/epoch{epoch+1}_{real_X_id}_real_fake_cycle_identity.png')
-
 
 # ================== MAIN TESTING FUNCTION ==================
 
@@ -568,7 +544,7 @@ def main():
                    'Discriminator_Y': Discriminator_Y.state_dict(),
                 }
                 print(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
-                f.write(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}")
+                f.write(f"Best model saved at epoch {best_epoch} with validation generator loss {best_val_generator_loss:.4f}\n")
 
             # learning rate decay
             if scheduler_G:
@@ -578,7 +554,6 @@ def main():
 
                 current_lr = scheduler_G.get_last_lr()[0]
                 print(f"Current Learning Rate: {current_lr:.6f}")
-
 
 
     if best_model_state is not None:
@@ -606,7 +581,6 @@ def main():
                       train_identity_Y_losses, val_identity_Y_losses,
                       results_path)
 
-
     # TESTING
     # load best model
     if best_model_state is not None:
@@ -618,7 +592,7 @@ def main():
 
         # generate images using the HAM test set
         print('Starting data generation on HAM test dataset..')
-        test_image_path = '../data/darkHAM'
+        test_image_path = '../data/darkHAM_unet'
         os.makedirs(test_image_path, exist_ok=True)
 
         save_generated_images(ham_loader_test, generate_XtoY, generate_YtoX, test_image_path, device)

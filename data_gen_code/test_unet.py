@@ -1,15 +1,16 @@
 import torch
 import os
 from PIL import Image
+import numpy as np
 from data_loading import get_dataloaders
-from cyclegan_resnet import ResnetGenerator, PatchGANDiscriminator, ImageBuffer
+from cyclegan import Generator, Discriminator
 
 # Define paths
 ddi_data_dir = "../data/ddi_cropped"
 ham_data_dir = "../data/HAM10000"
 scin_data_dir = "../data/dark_scin"
-test_image_path = "../data/darkHAM"  # Path to save generated images
-model_path = "../results/best_cyclegan_model.pth"  # Path to your saved model
+test_image_path = "../data/darkHAM_unet"  # Path to save generated images
+model_path = "../results/unet_cgan/best_cyclegan_model.pth"  # Path to your saved model
 os.makedirs(test_image_path, exist_ok=True)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -33,10 +34,10 @@ ddi_loader_train, ddi_loader_val, ham_loader_train, ham_loader_val, ham_loader_t
 # Load the best model state
 checkpoint = torch.load(model_path)
 
-generate_XtoY = ResnetGenerator().to(device)
-generate_YtoX = ResnetGenerator().to(device)
-Discriminator_X = PatchGANDiscriminator().to(device)
-Discriminator_Y = PatchGANDiscriminator().to(device)
+generate_XtoY = Generator().to(device)
+generate_YtoX = Generator().to(device)
+Discriminator_X = Discriminator().to(device)
+Discriminator_Y = Discriminator().to(device)
 
 # Load the model weights, ignoring mismatched keys
 generate_XtoY.load_state_dict(checkpoint['Generator_XtoY'], strict=False)
@@ -93,11 +94,14 @@ def save_generated_images(ham_loader_test, generate_XtoY, generate_YtoX, new_dat
             fake_Y_image = denormalize_image(fake_Y, 'DARK')
             cycle_X_image = denormalize_image(cycle_X, 'LIGHT')
 
-            fake_Y_image = np.transpose(fake_Y_image, (1, 2, 0))
-            cycle_X_image = np.transpose(cycle_X_image, (1, 2, 0))
-
-            fake_Y_image = fake_Y_image.squeeze(0)
-            cycle_X_image = cycle_X_image.squeeze(0)
+            if fake_Y_image.ndim == 3:
+                fake_Y_image = np.transpose(fake_Y_image, (1, 2, 0))
+                cycle_X_image = np.transpose(cycle_X_image, (1, 2, 0))
+            elif fake_Y_image.ndim == 4:
+                fake_Y_image = fake_Y_image.squeeze(0)  # Remove the batch dimension
+                fake_Y_image = np.transpose(fake_Y_image, (1, 2, 0))
+                cycle_X_image = cycle_X_image.squeeze(0)  # Remove the batch dimension
+                cycle_X_image = np.transpose(cycle_X_image, (1, 2, 0))
 
             # Save the images as PNG
             fake_Y_pil = Image.fromarray((fake_Y_image * 255).astype(np.uint8))
