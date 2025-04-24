@@ -217,9 +217,9 @@ def train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, devi
     
     return {'train_losses': train_losses,
             'train_accs': train_accs,
-            'val_ham_losses': val_ham_losses,
-            'val_ham_accs': val_ham_accs}, \
+            'val_losses': val_ham_losses,
+            'val_accs': val_ham_accs}, \
            {'train_losses': train_losses,
             'train_accs': train_accs,
-            'val_ddi_losses': val_ddi_losses,
-            'val_ddi_accs': val_ddi_accs}
+            'val_losses': val_ddi_losses,
+            'val_accs': val_ddi_accs}
