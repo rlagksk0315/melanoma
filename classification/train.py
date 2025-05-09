@@ -12,16 +12,13 @@ def train(model, train_loader, val_loader, pos_ratio, device, results_path, epoc
     model.to(device)
 
     os.makedirs(results_path, exist_ok=True)
-    save_path = os.path.join(results_path, 'model_best_loss.pth')
-    save_path2 = os.path.join(results_path, 'model_best_acc.pth')
+    save_path = os.path.join(results_path, 'best_model.pth')
 
     
     train_losses, train_accs = [], []
     val_losses, val_accs = [], []
 
-    min_val_loss = float('inf')
     max_val_acc = 0.0
-    best_epoch_loss = 0
     best_epoch_acc = 0
 
     for epoch in range(epochs):
@@ -75,25 +72,15 @@ def train(model, train_loader, val_loader, pos_ratio, device, results_path, epoc
         print(f"Train Loss: {avg_train_loss:.4f} | Train Acc: {train_acc:.4f}")
         print(f"Val Loss: {avg_val_loss:.4f} | Val Acc: {val_acc:.4f}")
 
-        if avg_val_loss < min_val_loss:
-            min_val_loss = avg_val_loss
-            best_epoch_loss = epoch + 1
-            torch.save({'epoch': best_epoch_loss,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'val_loss': min_val_loss}, save_path)
-            print(f"Best model saved at epoch {best_epoch_loss} with val_loss: {min_val_loss:.4f}")
-
         if val_acc > max_val_acc:
             max_val_acc = val_acc
             best_epoch_acc = epoch + 1
             torch.save({'epoch': best_epoch_acc,
                         'model_state_dict': model.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict(),
-                        'val_acc': max_val_acc}, save_path2)
+                        'val_acc': max_val_acc}, save_path)
             print(f"Best model saved at epoch {best_epoch_acc} with val_acc: {max_val_acc:.4f}")        
-
-    print(f"\nTraining complete. Best model at epoch {best_epoch_loss} with val_loss: {min_val_loss:.4f}")
+            
     print(f"\nTraining complete. Best model at epoch {best_epoch_acc} with val_acc: {max_val_acc:.4f}")
     
     return {'train_losses': train_losses,
@@ -108,17 +95,14 @@ def train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, devi
     model.to(device)
 
     os.makedirs(results_path, exist_ok=True)
-    save_path = os.path.join(results_path, 'model_best_loss.pth')
-    save_path2 = os.path.join(results_path, 'model_best_acc.pth')
+    save_path = os.path.join(results_path, 'best_model.pth')
 
     
     train_losses, train_accs = [], []
     val_ham_losses, val_ham_accs = [], []
     val_ddi_losses, val_ddi_accs = [], []
 
-    min_val_loss = float('inf')
     max_val_acc = 0.0
-    best_epoch_loss = 0
     best_epoch_acc = 0
 
     for epoch in range(epochs):
@@ -194,25 +178,15 @@ def train_3(model, train_loader, val_ham_loader, val_ddi_loader, pos_ratio, devi
         print(f"Val DDI Loss: {avg_val_ddi_loss:.4f} | Val DDI Acc: {val_ddi_acc:.4f}")
         print(f"Val HAM Loss: {avg_val_ham_loss:.4f} | Val HAM Acc: {val_ham_acc:.4f}")
 
-        if avg_val_ddi_loss < min_val_loss:
-            min_val_loss = avg_val_ddi_loss
-            best_epoch_loss = epoch + 1
-            torch.save({'epoch': best_epoch_loss,
-                        'model_state_dict': model.state_dict(),
-                        'optimizer_state_dict': optimizer.state_dict(),
-                        'val_loss': min_val_loss}, save_path)
-            print(f"Best model saved at epoch {best_epoch_loss} with val_ddi_loss: {min_val_loss:.4f}")
-
         if val_ddi_acc > max_val_acc:
             max_val_acc = val_ddi_acc
             best_epoch_acc = epoch + 1
             torch.save({'epoch': best_epoch_acc,
                         'model_state_dict': model.state_dict(),
                         'optimizer_state_dict': optimizer.state_dict(),
-                        'val_acc': max_val_acc}, save_path2)
+                        'val_acc': max_val_acc}, save_path)
             print(f"Best model saved at epoch {best_epoch_acc} with val_ddi_acc: {max_val_acc:.4f}")       
 
-    print(f"\nTraining complete. Best model at epoch {best_epoch_loss} with val_ddi_loss: {min_val_loss:.4f}")
     print(f"\nTraining complete. Best model at epoch {best_epoch_acc} with val_ddi_acc: {max_val_acc:.4f}")
     
     return {'train_losses': train_losses,
