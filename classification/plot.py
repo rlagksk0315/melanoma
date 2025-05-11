@@ -56,9 +56,7 @@ def main():
     with open('../results/(name)/main_1_classification/model_1_ddi_metrics.json', 'r') as f:
         ddi_metrics_1 = json.load(f)
 
-    with open('../results/(name)/main_2_classification/model_2_ham_metrics.json', 'r') as f:
-        ham_metrics_2 = json.load(f)
-    with open('../results/(name)/main_2_classification/model_2_ddi_metrics.json', 'r') as f:
+    with open('../results/(name)/main_2_classification/model_2_metrics.json', 'r') as f:
         ddi_metrics_2 = json.load(f)
 
     with open('../results/(name)/main_3_classification/model_3_ham_metrics.json', 'r') as f:

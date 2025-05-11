@@ -95,6 +95,7 @@ def split_data(df, group_col='id', label_col='label', test_size=0.2, val_size=0.
 
     return train_df, val_df, test_df
 
+# data loaders for models 1 & 2
 def get_dataloaders(train_df, val_df, test_df, root_dir, batch_size=32):
     train_transform, eval_transform = get_transforms()
 
@@ -108,6 +109,7 @@ def get_dataloaders(train_df, val_df, test_df, root_dir, batch_size=32):
     
     return train_loader, val_loader, test_loader
 
+# data loaders for models 3 & 7
 def get_dataloaders_3(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2, root_dir1, root_dir2, batch_size=32):
     train_transform, eval_transform = get_transforms()
 
@@ -128,6 +130,7 @@ def get_dataloaders_3(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2
     
     return train_loader, val_loader1, test_loader1, val_loader2, test_loader2
 
+# data loaders for models 4 & 5 & 6
 def get_dataloaders_4(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2, train_df3, root_dir1, root_dir2, root_dir3, batch_size=32):
     train_transform, eval_transform = get_transforms()
 
@@ -149,6 +152,7 @@ def get_dataloaders_4(train_df1, val_df1, test_df1, train_df2, val_df2, test_df2
     
     return train_loader, val_loader1, test_loader1, val_loader2, test_loader2
 
+# data loaders for model 8
 def get_dataloaders_8(train_df1, train_df2, val_df2, test_df2, root_dir1, root_dir2, batch_size=32):
     train_transform, eval_transform = get_transforms()
 
@@ -170,19 +174,3 @@ def get_pos_ratio(df):
     num_neg = (df['label'] == 0).sum()
     pos_ratio = num_neg/num_pos
     return pos_ratio
-
-def main():
-    ham_dir = "../data/HAM10000"
-    ddi_dir = "../data/ddi_cropped"
-    generated_dir = "../data/darkHAM"
-    generated_dir2 = "../data/darkHAM2"
-
-    ham_df = load_ham_metadata(ham_dir+'/HAM10000_metadata.csv')
-    df_DDI = load_ddi_metadata(ddi_dir+'/ddi_metadata.csv')
-    generated_df = load_generated_metadata(ham_dir+'/HAM10000_metadata.csv', generated_dir)
-    generated_df2 = load_generated_metadata(ham_dir+'/HAM10000_metadata.csv', generated_dir2)
-
-    print('Data loading complete!')
-
-if __name__ == "__main__":
-    main()

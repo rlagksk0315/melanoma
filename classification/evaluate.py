@@ -2,8 +2,6 @@ import os
 import torch
 from tqdm import tqdm
 import json
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, precision_recall_curve, roc_curve
 
 def evaluate(model, test_loader, results_path, model_name, device):
