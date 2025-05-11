@@ -38,7 +38,7 @@ def main():
     best_ckpt = os.path.join(args.results_path, 'best_model.pth')
     state = torch.load(best_ckpt, map_location=device)
     model.load_state_dict(state['model_state_dict'])
-    metrics_ddi = evaluate(model, test_loader, args.results_path, "model_6_ddi", device)
+    metrics_ddi = evaluate(model, test_loader, args.results_path, "model_8_ddi", device)
     print("Best model:")
     print(" DDI accuracy: ", metrics_ddi['accuracy'])
     print(" DDI precision: ", metrics_ddi['precision'])
