@@ -2,7 +2,7 @@ import torch
 import os
 from data_loading import load_ham_metadata, load_ddi_metadata, split_data, get_dataloaders, get_pos_ratio
 from models import get_efficientnet
-from train import train
+from train import train_3
 from plot import plot_loss
 from evaluate import evaluate
 import argparse
@@ -11,7 +11,7 @@ import argparse
 Training for malignant/benign lesion classification on HAM10000 dataset.
 """
 parser = argparse.ArgumentParser(description='Train malignant/benign classifier')
-parser.add_argument('--results_path', type=str, default='results/isalis/model_1', help='Path to save the results')
+parser.add_argument('--results_path', type=str, default='../results/isalis/classification_1', help='Path to save the results')
 parser.add_argument('--num_epochs', type=int, default=1)
 parser.add_argument('--learning_rate', type=float, default=1e-3)
 
@@ -29,10 +29,11 @@ def main():
     train_ham_loader, val_ham_loader, test_ham_loader = get_dataloaders(train_ham_df, val_ham_df, test_ham_df, '../data/HAM10000/images', batch_size=32)
     train_ddi_loader, val_ddi_loader, test_ddi_loader = get_dataloaders(train_ddi_df, val_ddi_df, test_ddi_df, '../data/ddi_cropped/images', batch_size=32)
     model = get_efficientnet(num_classes=2, pretrained=True)
-    train_metrics = train(model, train_ham_loader, val_ham_loader, pos_ratio, device, results_path=args.results_path, epochs=args.num_epochs, lr=args.learning_rate)
+    train_metrics_ham, train_metrics_ddi = train_3(model, train_ham_loader, val_ham_loader, val_ddi_loader, pos_ratio, device, results_path=args.results_path, epochs=args.num_epochs, lr=args.learning_rate)
 
-    # plot loss
-    plot_loss(train_metrics, args.results_path, "model_1")
+    # plot losses
+    plot_loss(train_metrics_ham, args.results_path, "model_1_ham")
+    plot_loss(train_metrics_ddi, args.results_path, "model_1_ddi") 
 
     # evaluate best model
     best_ckpt = os.path.join(args.results_path, 'best_model.pth')
