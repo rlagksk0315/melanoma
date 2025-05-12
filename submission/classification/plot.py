@@ -54,9 +54,9 @@ def plot_rocs(roc_df, results_path, dataset):
 
 
 def main():
-    with open('../results/(name)/main_1_classification/model_1_ham_metrics.json', 'r') as f:
+    with open('../results/hana/final_main_1_classification/model_1_ham_metrics.json', 'r') as f:
         ham_metrics_1 = json.load(f)
-    with open('../results/(name)/main_1_classification/model_1_ddi_metrics.json', 'r') as f:
+    with open('../results/hana/final_main_1_classification/model_1_ddi_metrics.json', 'r') as f:
         ddi_metrics_1 = json.load(f)
 
     with open('../results/isalis/classification_2/model_2_metrics.json', 'r') as f:
