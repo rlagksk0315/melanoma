@@ -11,8 +11,8 @@ import argparse
 Training for malignant/benign lesion classification on HAM10000 dataset.
 """
 parser = argparse.ArgumentParser(description='Train malignant/benign classifier')
-parser.add_argument('--results_path', type=str, default='../results/isalis/classification_1', help='Path to save the results')
-parser.add_argument('--num_epochs', type=int, default=1)
+parser.add_argument('--results_path', type=str, default='../results/model_1', help='Path to save the results')
+parser.add_argument('--num_epochs', type=int, default=200)
 parser.add_argument('--learning_rate', type=float, default=1e-3)
 
 args = parser.parse_args()
