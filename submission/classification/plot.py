@@ -92,7 +92,7 @@ def main():
     
 
     # HAM
-    ham_pr_df = pd.DataFrame({'model_name': [ 3, 4, 5, 6, 7],
+    ham_pr_df = pd.DataFrame({'model_name': [1, 3, 4, 5, 6, 7],
                               'recall': [ham_metrics_1['r'], ham_metrics_3['r'],
                                          ham_metrics_4['r'], ham_metrics_5['r'],
                                          ham_metrics_6['r'], ham_metrics_7['r']],
@@ -100,7 +100,7 @@ def main():
                                             ham_metrics_4['p'], ham_metrics_5['p'],
                                             ham_metrics_6['p'], ham_metrics_7['p']]})
     
-    ham_roc_df = pd.DataFrame({'model_name': [ 2, 4, 5, 6, 7],
+    ham_roc_df = pd.DataFrame({'model_name': [1, 3, 4, 5, 6, 7],
                                'fpr': [ham_metrics_1['fpr'], ham_metrics_3['fpr'],
                                        ham_metrics_4['fpr'], ham_metrics_5['fpr'],
                                        ham_metrics_6['fpr'], ham_metrics_7['fpr']],
@@ -109,7 +109,7 @@ def main():
                                        ham_metrics_6['tpr'], ham_metrics_7['tpr']]})
     
     # DDI
-    ddi_pr_df = pd.DataFrame({'model_name': [ 2, 3, 4, 5, 6, 7, 8],
+    ddi_pr_df = pd.DataFrame({'model_name': [1, 2, 3, 4, 5, 6, 7, 8],
                               'recall': [ddi_metrics_1['r'], ddi_metrics_2['r'],
                                          ddi_metrics_3['r'], ddi_metrics_4['r'],
                                          ddi_metrics_5['r'], ddi_metrics_6['r'],
@@ -119,7 +119,7 @@ def main():
                                             ddi_metrics_5['p'], ddi_metrics_6['p'],
                                             ddi_metrics_7['p'], ddi_metrics_8 ['p']]})
     
-    ddi_roc_df = pd.DataFrame({'model_name': [ 2, 3, 4, 5, 6, 7, 8],
+    ddi_roc_df = pd.DataFrame({'model_name': [1, 2, 3, 4, 5, 6, 7, 8],
                                'fpr': [ddi_metrics_1['fpr'], ddi_metrics_2['fpr'],
                                        ddi_metrics_3['fpr'], ddi_metrics_4['fpr'],
                                        ddi_metrics_5['fpr'], ddi_metrics_6['fpr'],
