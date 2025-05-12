@@ -38,6 +38,8 @@ def main():
     # evaluate best model
     best_ckpt = os.path.join(args.results_path, 'best_model.pth')
     state = torch.load(best_ckpt, map_location=device)
+    model.to(device)
+
     model.load_state_dict(state['model_state_dict'])
     metrics_ham = evaluate(model, test_ham_loader, args.results_path, "model_1_ham", device)
     metrics_ddi = evaluate(model, test_ddi_loader, args.results_path, "model_1_ddi", device)
